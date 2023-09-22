@@ -10,13 +10,6 @@ P_E_PROMPT = p_e_msg(few_shot=False)
 
 ratio = []
 
-def string_to_dict(dict_string):
-    return(ast.literal_eval(dict_string))
-
-def get_sublist_before_value(lst, value):
-    index = lst.index(value)
-    return lst[:index]
-
 def reconstruct_explaination(response: list, sentence: list):
     global ratio
     word_list = []
@@ -44,10 +37,6 @@ def reconstruct_explaination(response: list, sentence: list):
 def analyze_ep_result(sentence, response):
     r = response.split("\n")
     r = [i for i in r if i.strip()]
-    # r = get_sublist_before_value(r, "")
-    # print(r)
-    # print(f"There are {len(r)} explanations in a {len(sentence)} words sentence.")
-    # prediction  = re.search(r"[-+]?(?:\d*\.*\d+)", r[-1])[0]
     prediction_pair = eval(r[1])
     attribution_value = eval(r[0])
     print("prediction pair:", prediction_pair)
@@ -120,19 +109,6 @@ def main():
     explain_then_predict(dataset[:size:])
     # predict_and_explain(dataset[:size:])
     # print(f"The mean ration is {sum(ratio)/len(ratio)}")
-    # pe_csvfile = open("PE_Attribute_Values.csv", 'w')
-    # pe_csvwriter = csv.writer(pe_csvfile)
-    # for i in range(10):
-        # print()
-        # print(dataset[i])
-        # ep_prediction, ep_attribute_value = get_E_P_result(dataset[i])
-        # pe_prediction, pe_attribute_value = get_P_E_result(dataset[i])
-        # print(f"Explain then Predict. Prediction: {ep_prediction}; Attribute Values: {ep_attribute_value}.")
-        # print(f"Predict and Explain. Preciction: {pe_prediction}; Attribute Values: {pe_attribute_value}.")
-        # pe_csvwriter.writerow([i, pe_prediction, pe_attribute_value])
-    # ep_csvfile.close()
-    # pe_csvfile.close()
-
 
 if __name__ == "__main__":
     main()
