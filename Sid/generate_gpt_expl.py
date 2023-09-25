@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import pickle
 import getopt, sys
+import time
 
 # Model parameters
 # MESSAGES = [
@@ -19,13 +20,28 @@ import getopt, sys
 #     {"role": "user", "content": "Now the next sentence: It was a great movie overall, but the ending was a bit lackluster."},
 #     {"role": "assistant", "content": "Classification: 1, 0.75 confidence. [(\"It\", 0.174), (\"was\", -0.101), (\"a\", 0.122), (\"great\", 0.825), (\"movie\", 0.608), (\"overall\", 0.390), (\"but\", -0.134), (\"the\", 0.033), (\"ending\", -0.635), (\"was\", -0.145), (\"a\", 0.103), (\"bit\", -0.396), (\"lackluster\", -0.859)]"}
 #   ]
-# Testing only PE for now
+# Prediction Only
+# MESSAGES = [
+#     {
+#       "role": "system",
+#       "content": "You are a creative   and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nExample output:\n(<int classification>, <float confidence>)"
+#     }
+#   ]
+# PE
+# MESSAGES = [
+#     {
+#       "role": "system",
+#       "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nThen, analyze how important every single word and punctuation token in the review was to your classification. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation token in the sentence in a format of Python list of tuples. \n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nExample output:\n(<int classification>, <float confidence>)\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]"
+#     }
+#   ]
+# EP
 MESSAGES = [
     {
       "role": "system",
-      "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nThen, analyze how important every single word and punctuation token in the review was to your classification. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation token in the sentence in a format of Python list of tuples. \n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nExample output:\n(<int classification>, <float confidence>)\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]"
+      "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must analyze how important each and every word and punctuation in the review is in a  Python tuple format: (<word or punctuation>, <float importance>). The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
     }
   ]
+
 TEMPERATURE = 0
 MODEL = "gpt-3.5-turbo"
 
@@ -43,35 +59,64 @@ import openai
 sentences = []
 labels = []
 count = 0
+num_examples = 1000
 for batch in dataloader:
- if count == 100:
+ if count == num_examples:
   break
  sentences.append(batch['sentence'][0])
  labels.append(batch['label'].item())
  count+=1
-# print(sentences)
-# print(labels)
 print("starting api calls")
 
 openai.api_key = "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"
 messages = MESSAGES[:]
 responses = []
-num_examples = 3
+PRE_PHRASE = "This is the sentence: "
+
+
+def generate_response(model=MODEL):
+  while True:
+    try:
+        response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=0,
+        max_tokens=1024,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+        )
+        break
+    except openai.error.RateLimitError as e:
+        retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
+        print(f"Rate limit exceeded. Retrying in {retry_time} seconds...")
+        time.sleep(retry_time)
+        continue
+    except openai.error.Timeout as e:
+        print(f"Request timed out: {e}. Retrying in 10 seconds...")
+        time.sleep(10)
+        continue
+    except openai.error.APIError as e:
+        retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
+        print(f"API error occurred. Retrying in {retry_time} seconds...")
+        time.sleep(retry_time)
+        continue
+    except openai.error.ServiceUnavailableError as e:
+        print(f"Service is unavailable. Retrying in 10 seconds...")
+        time.sleep(10)
+        continue
+  return response
+
 for i in tqdm(range(num_examples)):
-  
-  messages.append({"role": "user", "content": sentences[i]})
-  completion = openai.ChatCompletion.create(
-    model=MODEL,
-    messages=messages,
-    temperature=TEMPERATURE
-  )
+  messages.append({"role": "user", "content": PRE_PHRASE + sentences[i]})
+  completion = generate_response(model=MODEL)
   responses.append(completion.choices[0].message.content)
   messages.pop()
   # messages.append({"role": "assistant", "content": completion.choices[0].message.content})
   
 
 # print(responses)
-with open("gpt_response.pickle", "wb") as handle:
+with open("gpt_response_PE.pickle", "wb") as handle:
   pickle.dump(responses, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 with open("sentences.pickle", "wb") as handle:
