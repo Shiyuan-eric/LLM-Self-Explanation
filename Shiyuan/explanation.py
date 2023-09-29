@@ -22,9 +22,18 @@ def reconstruct_explaination(response: list, sentence: list):
             word_list.append(i)
             expl_list.append(response[0][1])
             response.pop(0)
+        else:
+            while i in list(dict(response).keys()):
+                response.pop(0)
+                if i == response[0][0]:
+                    word_list.append(i)
+                    expl_list.append(response[0][1])
+                    response.pop(0)
+                    break
     diff = [x for x in sentence if x not in word_list]
     ratio.append(len(diff)/len(sentence))
-    print(f"The missing word / punctuation: {diff}. The ratio is {len(diff)} out of {len(sentence)} = {len(diff)/len(sentence)}.")
+    # if len(diff) > 0:
+        # print(f"The missing word / punctuation: {diff}. The ratio is {len(diff)} out of {len(sentence)} = {len(diff)/len(sentence)}.")
     for j in range(len(sentence)):
         if len(word_list) != 0 and sentence[j] == word_list[0]:
             attribution_value[j] = expl_list[0]
@@ -39,40 +48,65 @@ def analyze_ep_result(sentence, response):
     r = [i for i in r if i.strip()]
     prediction_pair = eval(r[1])
     attribution_value = eval(r[0])
-    print("prediction pair:", prediction_pair)
-    print("attribution_value:", attribution_value)
-    print(f"There are {len(attribution_value)} out of {len(sentence)} explanations being generated.")
+    # print("prediction pair:", prediction_pair)
+    # print("attribution_value:", attribution_value)
+    # if len(attribution_value) != len(sentence):
+        # print(f"There are {len(attribution_value)} out of {len(sentence)} explanations being generated.")
     final_attribution_value = reconstruct_explaination(attribution_value, sentence)
-    print(final_attribution_value)
-    return prediction_pair, attribution_value
+    # print(final_attribution_value)
+    return prediction_pair, final_attribution_value
+
+def analyze_pe_result_P_only(sentence, response):
+    r = response.split("\n")
+    r = [i for i in r if i.strip()]
+    prediction_pair = eval(r[0])
+    # attribution_value = eval(r[1])
+    # print("prediction pair:", prediction_pair)
+    # print("attribution_value:", attribution_value)
+    # if len(attribution_value) != len(sentence):
+        # print(f"There are {len(attribution_value)} out of {len(sentence)} explanations being generated.")
+    # final_attribution_value = reconstruct_explaination(attribution_value, sentence)
+    # print(final_attribution_value)
+    return prediction_pair
 
 def analyze_pe_result(sentence, response):
     r = response.split("\n")
     r = [i for i in r if i.strip()]
     prediction_pair = eval(r[0])
     attribution_value = eval(r[1])
-    print("prediction pair:", prediction_pair)
-    print("attribution_value:", attribution_value)
-    print(f"There are {len(attribution_value)} out of {len(sentence)} explanations being generated.")
+    # print("prediction pair:", prediction_pair)
+    # print("attribution_value:", attribution_value)
+    # if len(attribution_value) != len(sentence):
+        # print(f"There are {len(attribution_value)} out of {len(sentence)} explanations being generated.")
     final_attribution_value = reconstruct_explaination(attribution_value, sentence)
-    print(final_attribution_value)
-    return prediction_pair, attribution_value
+    # print(final_attribution_value)
+    return prediction_pair, final_attribution_value
 
-def get_E_P_result(sentence):
-    E_P_PROMPT.append({"role": "user", "content": f"\"{sentence}\""})
-    response = generate_response(prompt=E_P_PROMPT)["choices"][0]["message"]["content"]
-    print(response)
+def get_E_P_result_P_Only(sentence, prompt=E_P_PROMPT):
+    prompt.append({"role": "user", "content": f"<review> {sentence} <review>"})
+    # print(E_P_PROMPT)
+    response = generate_response(prompt=prompt)["choices"][0]["message"]["content"]
+    # print(response)
     sentence = sentence.split()
-    E_P_PROMPT.pop()
+    prompt.pop()
+    return analyze_pe_result_P_only(sentence, response)
+
+def get_E_P_result(sentence, prompt=E_P_PROMPT):
+    prompt.append({"role": "user", "content": f"<review> {sentence} <review>"})
+    # print(E_P_PROMPT)
+    response = generate_response(prompt=prompt)["choices"][0]["message"]["content"]
+    # print(response)
+    sentence = sentence.split()
+    prompt.pop()
     return analyze_ep_result(sentence, response)
     
 
-def get_P_E_result(sentence):
-    P_E_PROMPT.append({"role": "user", "content": f"\"{sentence}\""})
-    response = generate_response(prompt=P_E_PROMPT)["choices"][0]["message"]["content"]
-    print(response)
+def get_P_E_result(sentence, prompt=P_E_PROMPT):
+    prompt.append({"role": "user", "content": f"<review>{sentence}<review>"})
+    response = generate_response(prompt=prompt)["choices"][0]["message"]["content"]
+    # print(response)
     sentence = sentence.split()
-    P_E_PROMPT.pop()
+    prompt.pop()
     return analyze_pe_result(sentence, response)
 
 def explain_then_predict(dataset):
@@ -80,6 +114,7 @@ def explain_then_predict(dataset):
     prediction = []
     attribute_value = []
     for i in dataset:
+        print(f"** {dataset.index(i)} ********************************************")
         print(i)
         sentence.append(i)
         ep_prediction, ep_attribute_value = get_E_P_result(i)
@@ -94,6 +129,7 @@ def predict_and_explain(dataset):
     attribute_value = []
     for i in dataset:
         sentence.append(i)
+        print(f"** {dataset.index(i)} ********************************************")
         print(i)
         pe_prediction, pe_attribute_value = get_P_E_result(i)
         prediction.append(pe_prediction)
@@ -102,13 +138,13 @@ def predict_and_explain(dataset):
         pickle.dump({"sentence": sentence, "prediction": prediction, "saliency list": attribute_value}, dbfile)
 
 def main():
-    dataset = load_dataset('sst', split='test')['sentence']
-    size = 5
-    random.seed(10)
-    random.shuffle(dataset)
-    explain_then_predict(dataset[:size:])
-    # predict_and_explain(dataset[:size:])
-    # print(f"The mean ration is {sum(ratio)/len(ratio)}")
+    dataset = load_dataset('sst', split='test')
+    size = 100
+    dataset = dataset.shuffle(seed=8)['sentence']
+
+    # explain_then_predict(dataset[:size:])
+    predict_and_explain(dataset[:size:])
+    # print(f"The mean ratio is {sum(ratio)/len(ratio)}")
 
 if __name__ == "__main__":
     main()

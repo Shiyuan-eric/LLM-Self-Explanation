@@ -1,0 +1,55 @@
+********************************************
+Reggio 's trippy , ambitious downer can also sometimes come across like nothing more than a glorified Nike ad .
+attribution_value: [('Reggio', 0.5), ("'s", 0.5), ('trippy', 0.5), (',', 0.0), ('ambitious', 0.5), ('downer', -0.5), ('can', 0.0), ('also', 0.0), ('sometimes', 0.0), ('come', 0.0), ('across', 0.0), ('like', 0.0), ('nothing', -0.5), ('more', 0.0), ('than', 0.0), ('a', 0.0), ('glorified', 0.5), ('Nike', 0.0), ('ad', 0.0)]
+There are 19 out of 20 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 20 = 0.05.
+********************************************
+( A ) superbly controlled , passionate adaptation of Graham Greene 's 1955 novel .
+attribution_value: [('(', 0.5), ('A', 0.5), (')', 0.5), ('superbly', 0.8), ('controlled', 0.7), (',', 0.0), ('passionate', 0.9), ('adaptation', 0.8), ('of', 0.0), ('Graham', 0.0), ("Greene's", 0.0), ('1955', 0.0), ('novel', 0.6), ('.', 0.0)]
+There are 14 out of 15 explanations being generated.
+The missing word / punctuation: ['Greene', "'s"]. The ratio is 2 out of 15 = 0.13333333333333333.
+********************************************
+An extraordinary Swedish film about the soul adventure of marriage -- the kind of intimate and character-driven film that Bille August does best .
+attribution_value: [('An', 0.5), ('extraordinary', 0.8), ('Swedish', 0.6), ('film', 0.7), ('about', 0.3), ('the', 0.2), ('soul', 0.6), ('adventure', 0.7), ('of', 0.2), ('marriage', 0.5), ('--', 0.0), ('the', 0.2), ('kind', 0.5), ('of', 0.2), ('intimate', 0.6), ('and', 0.2), ('character-driven', 0.7), ('film', 0.7), ('that', 0.2), ('Bille', 0.4), ('August', 0.4), ('does', 0.2), ('best', 0.8)]
+There are 23 out of 24 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 24 = 0.041666666666666664.
+********************************************
+Hmm .
+attribution_value: [('.', 0.0)]
+There are 1 out of 2 explanations being generated.
+The missing word / punctuation: ['Hmm']. The ratio is 1 out of 2 = 0.5.
+********************************************
+Choose your reaction : A. ) That sure is funny !
+attribution_value: [('Choose', 0.5), ('your', 0.5), ('reaction', 0.5), (':', 0.0), ('A', 0.0), ('.', 0.0), (')', 0.0), ('That', 0.5), ('sure', 0.5), ('is', 0.5), ('funny', 1.0), ('!', 1.0)]
+There are 12 out of 11 explanations being generated.
+The missing word / punctuation: ['A.']. The ratio is 1 out of 11 = 0.09090909090909091.
+********************************************
+Earnest but earthbound ... a slow , soggy , soporific , visually dank crime melodrama\/character study that would be more at home on the small screen but for its stellar cast .
+attribution_value: [('Earnest', 0.5), ('but', 0.0), ('earthbound', -0.5), ('...', 0.0), ('a', 0.0), ('slow', -0.5), (',', 0.0), ('soggy', -0.5), (',', 0.0), ('soporific', -0.5), (',', 0.0), ('visually', 0.0), ('dank', -0.5), ('crime', -0.5), ('melodrama\\/character', 0.0), ('study', 0.0), ('that', 0.0), ('would', 0.0), ('be', 0.0), ('more', 0.0), ('at', 0.0), ('home', 0.0), ('on', 0.0), ('the', 0.0), ('small', 0.0), ('screen', 0.0), ('but', 0.0), ('for', 0.0), ('its', 0.0), ('stellar', 0.5), ('cast', 0.0)]
+There are 31 out of 32 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 32 = 0.03125.
+********************************************
+Maguire is a surprisingly effective Peter\/Spider-Man .
+attribution_value: [('Maguire', 0.5), ('is', 0.0), ('a', 0.0), ('surprisingly', 0.5), ('effective', 0.5), ('Peter', 0.0), ('/', 0.0), ('Spider-Man', 0.0), ('.', 0.0)]
+There are 9 out of 7 explanations being generated.
+The missing word / punctuation: ['Peter\\/Spider-Man']. The ratio is 1 out of 7 = 0.14285714285714285.
+********************************************
+`` Men in Black II , '' has all the earmarks of a sequel .
+attribution_value: [('Men', 0.5), ('in', 0.5), ('Black', 0.5), ('II', 0.5), (',', 0.0), ("''", 0.0), ('has', 0.0), ('all', 0.0), ('the', 0.0), ('earmarks', 0.0), ('of', 0.0), ('a', 0.0), ('sequel', 0.0)]
+There are 13 out of 15 explanations being generated.
+The missing word / punctuation: ['``', '.']. The ratio is 2 out of 15 = 0.13333333333333333.
+********************************************
+Sam Jones became a very lucky filmmaker the day Wilco got dropped from their record label , proving that one man 's ruin may be another 's fortune .
+attribution_value: [('Sam', 0.2), ('Jones', 0.2), ('became', 0.2), ('a', 0.2), ('very', 0.2), ('lucky', 0.8), ('filmmaker', 0.8), ('the', 0.2), ('day', 0.2), ('Wilco', 0.8), ('got', 0.2), ('dropped', -0.8), ('from', 0.2), ('their', 0.2), ('record', 0.2), ('label', 0.2), (',', 0.2), ('proving', 0.2), ('that', 0.2), ('one', 0.2), ('man', 0.2), ("'s", 0.2), ('ruin', -0.8), ('may', 0.2), ('be', 0.2), ('another', 0.2), ("'s", 0.2), ('fortune', 0.8)]
+There are 28 out of 29 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 29 = 0.034482758620689655.
+********************************************
+Myers never knows when to let a gag die ; thus , we 're subjected to one mind-numbingly lengthy riff on poo and pee jokes after another .
+attribution_value: [('Myers', 0.5), ('never', -0.5), ('knows', -0.5), ('when', -0.5), ('to', -0.5), ('let', -0.5), ('a', -0.5), ('gag', -0.5), ('die', -0.5), ('thus', -0.5), (',', -0.5), ('we', -0.5), ("'re", -0.5), ('subjected', -0.5), ('to', -0.5), ('one', -0.5), ('mind-numbingly', -0.5), ('lengthy', -0.5), ('riff', -0.5), ('on', -0.5), ('poo', -0.5), ('and', -0.5), ('pee', -0.5), ('jokes', -0.5), ('after', -0.5), ('another', -0.5), ('.', -0.5)]
+There are 27 out of 28 explanations being generated.
+The missing word / punctuation: [';']. The ratio is 1 out of 28 = 0.03571428571428571.
+********************************************
+This is as powerful a set of evidence as you 'll ever find of why art matters , and how it can resonate far beyond museum walls and through to the most painfully marginal lives .
+attribution_value: [('This', 0.5), ('is', 0.5), ('as', 0.5), ('powerful', 1.0), ('a', 0.5), ('set', 0.5), ('of', 0.5), ('evidence', 0.5), ('as', 0.5), ('you', 0.5), ("'ll", 0.5), ('ever', 0.5), ('find', 0.5), ('of', 0.5), ('why', 0.5), ('art', 1.0), ('matters', 1.0), (',', 0.0), ('and', 0.5), ('how', 0.5), ('it', 0.5), ('can', 0.5), ('resonate', 0.5), ('far', 0.5), ('beyond', 0.5), ('museum', 0.5), ('walls', 0.5), ('and', 0.5), ('through', 0.5), ('to', 0.5), ('the', 0.5), ('most', 0.5), ('painfully', -1.0), ('marginal', -1.0), ('lives', -1.0)]
+There are 35 out of 36 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 36 = 0.027777777777777776.
