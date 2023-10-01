@@ -40,7 +40,7 @@ class GPT_Evaluator():
     
 
 
-    def __init__(self, response_filename, PE, messages):
+    def __init__(self, response_filename, PE, messages, label_filename):
         self.messages = messages
         self.fails = 0
         self.total = 0
@@ -48,6 +48,23 @@ class GPT_Evaluator():
         self.ovr_total = 0
         self.response_filename = response_filename
         self.PE = PE
+        self.label_filename = label_filename
+
+    def convert_from_Shiyuan_format(self, inp, sentence):
+        explanations = []
+        tokens = sentence.split(' ')
+        for key, value in inp.items():
+            index = key
+            saliency = value
+            word = tokens[index]
+            new_exp = ((word, (saliency, index)), tokens)
+            explanations.append(new_exp)
+        return explanations
+
+    def process_GPT_input_Shiyuan(self):
+        with open(self.response_filename, 'rb') as handle:
+            responses = pickle.load(handle)
+        
     
     def process_GPT_input(self):
         with open(self.response_filename, 'rb') as handle:
@@ -148,7 +165,7 @@ class GPT_Evaluator():
     
     def calculate_accuracy(self):
         print("Calculating Accuracy...")
-        with open('labels_EP.pickle', 'rb') as handle:
+        with open(self.label_filename, 'rb') as handle:
             labels = pickle.load(handle)
         correct = 0.0
         total = 0.0
@@ -319,15 +336,19 @@ class GPT_Evaluator():
 
 if __name__ == "__main__":
     response_filename = "gpt_response_EP.pickle"
+    label_filename = "labels_EP.pickle"
     #EP
     messages = [
         {
-        "role": "system",
-        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
+            "role": "system",
+            "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
         }
     ]
-    evaluator = GPT_Evaluator(response_filename, PE=False, messages=messages)
+    evaluator = GPT_Evaluator(response_filename=response_filename, PE=False, messages=messages, label_filename=label_filename)
 
+    
+
+    print("Input File: " + response_filename)
     evaluator.process_GPT_input()
     evaluator.print_fail_rate()
     evaluator.reset_fails()
