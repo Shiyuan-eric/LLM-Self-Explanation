@@ -10,7 +10,7 @@ from scipy import stats
 import os
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = "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"
 
 # Model parameters for repeatability
 # Testing only PE for now
@@ -51,15 +51,14 @@ class GPT_Evaluator():
         self.label_filename = label_filename
 
     def convert_from_Shiyuan_format(self, inp, sentence):
-        explanations = []
         tokens = sentence.split(' ')
+        new_exp = []
         for key, value in inp.items():
             index = key
             saliency = value
             word = tokens[index]
-            new_exp = ((word, (saliency, index)), tokens)
-            explanations.append(new_exp)
-        return explanations
+            new_exp.append((word, (saliency, index)))
+        return (new_exp, tokens)
 
     def process_GPT_input_Shiyuan(self):
         with open(self.response_filename, 'rb') as handle:
