@@ -35,17 +35,13 @@ def evaluate_comprehensiveness(sentence: str, word_saliency_list: list):
     sentences = sentence.split()
     to_sum = []
     ns = sentences.copy()
-    fail = 0
-    og_score, _ = get_prediction(sentence=sentence, prompt=PROMPT)
+    og_score = get_prediction(sentence=sentence, prompt=PROMPT)
     for k in word_saliency_list:
         sentences.remove(ns[k])
         ss = " ".join(sentences)
-        new_result, notsucceed = get_prediction(sentence=ss, prompt=PROMPT)
+        new_result = get_prediction(sentence=ss, prompt=PROMPT)
         to_sum.append(og_score-new_result)
-        if notsucceed:
-            fail += 1
     Sum = sum(to_sum)
-    print(f"There are {fail} number of failures in {len(ns)} words.")
     return (Sum/(1+len(to_sum)))
 
 def evaluate_sufficiency(sentence: str, word_saliency_list: list):

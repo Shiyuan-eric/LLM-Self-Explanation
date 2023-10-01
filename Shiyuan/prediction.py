@@ -23,20 +23,20 @@ def generate_response(model=MODEL, prompt=""):
             break
         except openai.error.RateLimitError as e:
             retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
-            print(f"Rate limit exceeded. Retrying in {retry_time} seconds...")
+            print(f"\nRate limit exceeded. Retrying in {retry_time} seconds...")
             time.sleep(retry_time)
             continue
         except openai.error.Timeout as e:
-            print(f"Request timed out: {e}. Retrying in 10 seconds...")
+            print(f"\nRequest timed out: {e}. Retrying in 10 seconds...")
             time.sleep(10)
             continue
         except openai.error.APIError as e:
             retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
-            print(f"API error occurred. Retrying in {retry_time} seconds...")
+            print(f"\nAPI error occurred. Retrying in {retry_time} seconds...")
             time.sleep(retry_time)
             continue
         except openai.error.ServiceUnavailableError as e:
-            print(f"Service is unavailable. Retrying in 10 seconds...")
+            print(f"\nService is unavailable. Retrying in 10 seconds...")
             time.sleep(10)
             continue
     return response
@@ -44,24 +44,12 @@ def generate_response(model=MODEL, prompt=""):
 
 def get_prediction(sentence: str = "", prompt: str = "", model = MODEL):
     if len(sentence) == 0:
-        return (0.5, False)
-    prompt.append({"role": "user", "content": f"\"{sentence}\""})
+        return 0.5
+    prompt.append({"role": "user", "content": f"<review>{sentence}<review>"})
     to_sum = []
-    print(prompt)
     response = generate_response(model,prompt)
     outcome = response["choices"][0]["message"]["content"]
-    print(outcome)
-    m = re.search("[-+]?(?:\d*\.*\d+)", outcome)
-    if m:
-        to_sum.append(float(m[0]))
+    outcome = eval(outcome)
+    prediction = outcome[1] if outcome[0] == 1 else (1-outcome[1])
     prompt.pop()
-    # mean = sum(to_sum) / len(to_sum)
-    # variance = sum([((x - mean) ** 2) for x in to_sum]) / len(to_sum)
-    # res = variance ** 0.5
-    # print(res)
-    # print(to_sum)
-
-    if len(to_sum) == 0:
-        print(f"The sentence is: {sentence}")
-        return (0.5, True)
-    return (to_sum[0], False)
+    return float(prediction)

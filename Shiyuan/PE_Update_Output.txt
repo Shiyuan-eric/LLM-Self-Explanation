@@ -1,0 +1,34 @@
+** 2 ********************************************
+( A ) superbly controlled , passionate adaptation of Graham Greene 's 1955 novel .
+attribution_value: [('(', 0.2), ('A', 0.8), (')', 0.2), ('superbly', 0.9), ('controlled', 0.8), (',', 0.1), ('passionate', 0.9), ('adaptation', 0.8), ('of', 0.5), ('Graham', 0.6), ("Greene's", 0.6), ('1955', 0.5), ('novel', 0.7), ('.', 0.1)]
+There are 14 out of 15 explanations being generated.
+The missing word / punctuation: ['Greene', "'s"]. The ratio is 2 out of 15 = 0.13333333333333333.
+** 24 ********************************************
+The cartoon that is n't really good enough to be on afternoon TV is now a movie that is n't really good enough to be in theaters .
+attribution_value: [('The', 0.2), ('cartoon', -0.3), ('that', 0.1), ('is', 0.1), ("n't", -0.2), ('really', 0.1), ('good', 0.2), ('enough', 0.1), ('to', 0.1), ('be', 0.1), ('on', 0.1), ('afternoon', 0.1), ('TV', 0.1), ('now', 0.1), ('a', 0.1), ('movie', -0.3), ('that', 0.1), ('is', 0.1), ("n't", -0.2), ('really', 0.1), ('good', 0.2), ('enough', 0.1), ('to', 0.1), ('be', 0.1), ('in', 0.1), ('theaters', 0.1), ('.', 0.1)]
+There are 27 out of 28 explanations being generated.
+The missing word / punctuation: ['now', 'a', 'movie']. The ratio is 3 out of 28 = 0.10714285714285714.
+** 29 ********************************************
+Windtalkers celebrates the human spirit and packs an emotional wallop .
+attribution_value: [('Windtalkers', 0.7), ('celebrates', 0.8), ('the', 0.2), ('human', 0.6), ('spirit', 0.9), ('and', 0.1), ('packs', 0.7), ('an', 0.3), ('emotional', 0.8), ('wallop', 0.9)]
+There are 10 out of 11 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 11 = 0.09090909090909091.
+** 32 ********************************************
+Smith 's point is simple and obvious -- people 's homes are extensions of themselves , and particularly eccentric people have particularly eccentric living spaces -- but his subjects are charmers .
+attribution_value: [('Smith', 0.2), ("'s", 0.1), ('point', 0.3), ('is', 0.1), ('simple', 0.7), ('and', 0.1), ('obvious', 0.6), ('--', 0.0), ('people', 0.4), ("'s", 0.1), ('homes', 0.5), ('are', 0.1), ('extensions', 0.4), ('of', 0.1), ('themselves', 0.3), (',', 0.0), ('and', 0.1), ('particularly', 0.5), ('eccentric', 0.8), ('people', 0.4), ('have', 0.1), ('particularly', 0.5), ('eccentric', 0.8), ('living', 0.6), ('spaces', 0.5), ('--', 0.0), ('but', 0.1), ('his', 0.2), ('subjects', 0.3), ('are', 0.1), ('charmers', 0.7)]
+There are 31 out of 32 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 32 = 0.03125.
+** 58 ********************************************
+Maguire is a surprisingly effective Peter\/Spider-Man .
+attribution_value: [('Maguire', 0.5), ('is', 0.2), ('a', 0.1), ('surprisingly', 0.7), ('effective', 0.8), ('Peter/Spider-Man', 0.9), ('.', 0.3)]
+The missing word / punctuation: ['Peter\\/Spider-Man']. The ratio is 1 out of 7 = 0.14285714285714285.
+** 64 ********************************************
+`` Men in Black II , '' has all the earmarks of a sequel .
+attribution_value: [('Men', 0.2), ('in', 0.1), ('Black', 0.3), ('II', 0.1), (',', 0.0), ("''", 0.0), ('has', 0.1), ('all', 0.1), ('the', 0.1), ('earmarks', 0.1), ('of', 0.1), ('a', 0.1), ('sequel', 0.1), ('.', 0.0)]
+There are 14 out of 15 explanations being generated.
+The missing word / punctuation: ['``']. The ratio is 1 out of 15 = 0.06666666666666667.
+** 87 ********************************************
+Punish the vehicle to adore the star .
+attribution_value: [('Punish', -0.5), ('the', 0), ('vehicle', 0), ('to', 0), ('adore', 0.5), ('the', 0), ('star', 0)]
+There are 7 out of 8 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 8 = 0.125.

@@ -1,0 +1,24 @@
+** 2 ********************************************
+( A ) superbly controlled , passionate adaptation of Graham Greene 's 1955 novel .
+attribution_value: [('(', 0.0), ('A', 0.0), (')', 0.0), ('superbly', 0.0), ('controlled', 0.0), (',', 0.0), ('passionate', 0.0), ('adaptation', 0.0), ('of', 0.0), ('Graham', 0.0), ("Greene's", 0.0), ('1955', 0.0), ('novel', 0.0), ('.', 0.0)]
+There are 14 out of 15 explanations being generated.
+The missing word / punctuation: ['Greene', "'s"]. The ratio is 2 out of 15 = 0.13333333333333333.
+** 24 ********************************************
+The cartoon that is n't really good enough to be on afternoon TV is now a movie that is n't really good enough to be in theaters .
+attribution_value: [('The', 0.0), ('cartoon', 0.0), ('that', 0.0), ('is', 0.0), ("n't", 0.0), ('really', 0.0), ('good', 0.0), ('enough', 0.0), ('to', 0.0), ('be', 0.0), ('on', 0.0), ('afternoon', 0.0), ('TV', 0.0), ('is', 0.0), ('now', 0.0), ('a', 0.0), ('movie', 0.0), ('that', 0.0), ('is', 0.0), ("n't", 0.0), ('really', 0.0), ('good', 0.0), ('enough', 0.0), ('to', 0.0), ('be', 0.0), ('in', 0.0), ('theaters', 0.0)]
+There are 27 out of 28 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 28 = 0.03571428571428571.
+** 31 ********************************************
+Earnest but earthbound ... a slow , soggy , soporific , visually dank crime melodrama\/character study that would be more at home on the small screen but for its stellar cast .
+attribution_value: [('Earnest', 0.5), ('but', 0.0), ('earthbound', -0.5), ('...', 0.0), ('a', 0.0), ('slow', -0.5), (',', 0.0), ('soggy', -0.5), (',', 0.0), ('soporific', -0.5), (',', 0.0), ('visually', 0.0), ('dank', -0.5), ('crime', -0.5), ('melodrama\\/character', 0.0), ('study', 0.0), ('that', 0.0), ('would', 0.0), ('be', 0.0), ('more', 0.0), ('at', 0.0), ('home', 0.0), ('on', 0.0), ('the', 0.0), ('small', 0.0), ('screen', 0.0), ('but', 0.0), ('for', 0.0), ('its', 0.0), ('stellar', 0.5), ('cast', 0.0)]
+There are 31 out of 32 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 32 = 0.03125.
+** 32 ********************************************
+Smith 's point is simple and obvious -- people 's homes are extensions of themselves , and particularly eccentric people have particularly eccentric living spaces -- but his subjects are charmers .
+attribution_value: [('Smith', 0.5), ("'s", 0.5), ('point', 0.5), ('is', 0.5), ('simple', 0.5), ('and', 0.5), ('obvious', 0.5), ('--', 0.5), ('people', 0.5), ("'s", 0.5), ('homes', 0.5), ('are', 0.5), ('extensions', 0.5), ('of', 0.5), ('themselves', 0.5), (',', 0.5), ('and', 0.5), ('particularly', 0.5), ('eccentric', 0.5), ('people', 0.5), ('have', 0.5), ('particularly', 0.5), ('eccentric', 0.5), ('living', 0.5), ('spaces', 0.5), ('--', 0.5), ('but', 0.5), ('his', 0.5), ('subjects', 0.5), ('are', 0.5), ('charmers', 0.5)]
+There are 31 out of 32 explanations being generated.
+The missing word / punctuation: ['.']. The ratio is 1 out of 32 = 0.03125.
+* 58 ********************************************
+Maguire is a surprisingly effective Peter\/Spider-Man .
+attribution_value: [('Maguire', 0.5), ('is', 0.0), ('a', 0.0), ('surprisingly', 0.5), ('effective', 0.5), ('Peter/Spider-Man', 0.0), ('.', 0.0)]
+The missing word / punctuation: ['Peter\\/Spider-Man']. The ratio is 1 out of 7 = 0.14285714285714285.
