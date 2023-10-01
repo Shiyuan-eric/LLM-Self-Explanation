@@ -10,8 +10,7 @@ from scipy import stats
 import os
 
 
-openai.api_key = "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"
-
+openai.api_key = os.getenv("OPENAI_API_KEY")
 # Model parameters for repeatability
 # Testing only PE for now
 # messages = [
