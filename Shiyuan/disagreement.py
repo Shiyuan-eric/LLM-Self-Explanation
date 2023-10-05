@@ -18,11 +18,13 @@ def generating_PE_word_saliency_list():
     with open(filename, "rb") as handle:
         expl = pickle.load(handle)
     new_expl = []
+    val = []
     for sentence, response in expl.items():
         # print(response)
         # print(analyze_pe_result(sentence.split(), response))
         new_expl.append(list(analyze_pe_result(sentence.split(), response)[1].keys()))
-    return(new_expl)
+        val.append(list(analyze_pe_result(sentence.split(), response)[1].values()))
+    return new_expl, val
 
 def generating_EP_word_saliency_list():
     filename="gpt_response_EP.pickle"
@@ -30,11 +32,13 @@ def generating_EP_word_saliency_list():
         expl = pickle.load(handle)
     
     new_expl = []
+    val = []
     for sentence, response in expl.items():
         # print(response)
         # print(analyze_ep_result(sentence.split(), response))
         new_expl.append(list(analyze_ep_result(sentence.split(), response)[1].keys()))
-    return(new_expl)
+        val.append(list(analyze_ep_result(sentence.split(), response)[1].values()))
+    return new_expl, val
 
 def generating_PE_Occlusion_saliency_list():
     filename = "PE_Occlusion_Result_Predict"
@@ -42,11 +46,13 @@ def generating_PE_Occlusion_saliency_list():
         expl = pickle.load(handle)
 
     new_expl = []
+    val = []
     for response in expl[1]:
         for k, v in response.items():
             response[k] = v + random.uniform(-1 * random_range, random_range)
         new_expl.append(list(dict(sorted(response.items(), key=lambda item: item[1], reverse=True)).keys()))
-    return new_expl
+        val.append(list(dict(sorted(response.items(), key=lambda item: item[1], reverse=True)).values()))
+    return new_expl, val
 
 def generating_EP_Occlusion_saliency_list():
     filename = "EP_Occlusion_Result_Predict"
@@ -54,11 +60,14 @@ def generating_EP_Occlusion_saliency_list():
         expl = pickle.load(handle)
 
     new_expl = []
+    val = []
     for response in expl[1]:
         for k, v in response.items():
             response[k] = v + random.uniform(-1 * random_range, random_range)
         new_expl.append(list(dict(sorted(response.items(), key=lambda item: item[1], reverse=True)).keys()))
-    return new_expl
+        val.append(list(dict(sorted(response.items(), key=lambda item: item[1], reverse=True)).values()))
+
+    return new_expl, val
 
 def feature_agreement(word_saliency_list_1: list, word_saliency_list_2: list, k: int):
     top_k_1 = word_saliency_list_1[:k:]
@@ -72,6 +81,22 @@ def rank_agreement(word_saliency_list_1: list, word_saliency_list_2: list, k: in
     result = []
     for i in top_k_1:
         result.append(i in top_k_2 and top_k_1.index(i) == top_k_2.index(i))
+    return result.count(1) / k
+
+def sign_agreement(word_saliency_list_1: list, word_saliency_list_2: list, attr_val1: list, attr_val2: list, k: int):
+    top_k_1 = word_saliency_list_1[:k:]
+    top_k_2 = word_saliency_list_2[:k:]
+    result = []
+    for i in top_k_1:
+        result.append(i in top_k_2 and attr_val1[top_k_1.index(i)] * attr_val2[top_k_2.index(i)] > 0)
+    return result.count(1) / k
+
+def signed_rank_agreement(word_saliency_list_1: list, word_saliency_list_2: list, attr_val1: list, attr_val2: list, k: int):
+    top_k_1 = word_saliency_list_1[:k:]
+    top_k_2 = word_saliency_list_2[:k:]
+    result = []
+    for i in top_k_1:
+        result.append(i in top_k_2 and attr_val1[top_k_1.index(i)] * attr_val2[top_k_2.index(i)] > 0 and top_k_1.index(i) == top_k_2.index(i))
     return result.count(1) / k
     
 def rank_correlation(word_saliency_list_1: list, word_saliency_list_2: list):
@@ -88,26 +113,34 @@ def pairwise_rank_agreement(word_saliency_list_1: list, word_saliency_list_2: li
             result.append(0)
     return result.count(1)/len(result)
 
+def IOU(word_saliency_list_1: list, word_saliency_list_2: list, list, k: int):
+    top_k_1 = word_saliency_list_1[:k:]
+    top_k_2 = word_saliency_list_2[:k:]
+    inter = set(top_k_1).intersection(set(top_k_2))
+    union = set(top_k_1).union(set(top_k_2))
+    return len(inter)/len(union)
+
+
 
 def main():
     size = 100
     dataset = load_dataset('sst', split='test')
     dataset = dataset.shuffle(seed=8)['sentence']
-    PE_word_saliency_list = generating_PE_word_saliency_list()
-    EP_word_saliency_list = generating_EP_word_saliency_list()
-    PE_Occlusion_word_saliency_list = generating_PE_Occlusion_saliency_list()
-    EP_Occlusion_word_saliency_list = generating_EP_Occlusion_saliency_list()
-    # print("PE_word_saliency_list")
-    # print(PE_word_saliency_list)
+    PE_word_saliency_list, PE_attribute_val = generating_PE_word_saliency_list()
+    EP_word_saliency_list, EP_attribute_val= generating_EP_word_saliency_list()
+    PE_Occlusion_word_saliency_list, PE_Occlusion_attribute_val = generating_PE_Occlusion_saliency_list()
+    EP_Occlusion_word_saliency_list, EP_Occlusion_attribute_val = generating_EP_Occlusion_saliency_list()
+    # print("PE_attribute_val")
+    # print(PE_attribute_val)
     # print("******************************")
-    # print("EP_word_saliency_list")
-    # print(EP_word_saliency_list)
+    # print("EP_attribute_val")
+    # print(EP_attribute_val)
     # print("******************************")
-    # print("PE_Occlusion_word_saliency_list")
-    # print(PE_Occlusion_word_saliency_list)
+    # print("PE_Occlusion_attribute_val")
+    # print(PE_Occlusion_attribute_val)
     # print("******************************")
-    # print("EP_Occlusion_word_saliency_list")
-    # print(EP_Occlusion_word_saliency_list)
+    # print("EP_Occlusion_attribute_val")
+    # print(EP_Occlusion_attribute_val)
 
     # for i in range(100):
     #     if len(PE_word_saliency_list[i]) != len(EP_word_saliency_list[i]) and len(PE_Occlusion_word_saliency_list[i]) != len(EP_Occlusion_word_saliency_list[i]) and len(PE_word_saliency_list[i]) != len(EP_Occlusion_word_saliency_list[i]):
