@@ -164,7 +164,7 @@ if __name__ == "__main__":
             cur = pickle.load(handle)
         for e in cur:
             explanations.append(e)
-    with open("LIME_response_EP" % (i, i+batch_size), "wb") as handle:
+    with open("LIME_response_EP", "wb") as handle:
         pickle.dump(explanations, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
