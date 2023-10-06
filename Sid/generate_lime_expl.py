@@ -100,7 +100,6 @@ class LimeExplanationGenerator():
     def predict_proba(self, sentences):
         probs = np.zeros((len(sentences), 2), dtype=float)
         for i in range(len(sentences)):
-            time.sleep(5)
             messages.append({"role": "user", "content": PRE_PHRASE + sentences[i] + POST_PHRASE})
             (pred, conf, expl) = self.parse_completion(self.generate_response().choices[0].message.content)
             messages.pop()
@@ -165,7 +164,7 @@ if __name__ == "__main__":
             cur = pickle.load(handle)
         for e in cur:
             explanations.append(e)
-    with open("LIME_response_EP_%d_%d.pickle" % (i, i+batch_size), "wb") as handle:
-        pickle.dump(lime_generator.explanations, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open("LIME_response_EP" % (i, i+batch_size), "wb") as handle:
+        pickle.dump(explanations, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
