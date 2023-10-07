@@ -65,7 +65,12 @@ class GPT_Evaluator():
         with open(self.response_filename, 'rb') as handle:
             responses = pickle.load(handle)
         
-    
+    def process_LIME_input(self):
+        with open(self.response_filename, 'rb') as handle:
+            explanations = pickle.load(handle)
+        self.explanations = explanations
+
+        
     def process_GPT_input(self):
         with open(self.response_filename, 'rb') as handle:
             responses = pickle.load(handle)
@@ -126,6 +131,10 @@ class GPT_Evaluator():
             except openai.error.ServiceUnavailableError as e:
                 print(f"Service is unavailable. Retrying in 10 seconds...")
                 time.sleep(10)
+                continue
+            except openai.error.APIConnectionError as e:
+                print(f"Not connected to internet. Retrying in 300 seconds...")
+                time.sleep(300)
                 continue
         return response
     
@@ -241,7 +250,7 @@ class GPT_Evaluator():
             ret = ret / (len(explanation) + 1)
             suff_list.append(ret)
 
-        return suff_list
+        return self.calculate_avg(suff_list)
 
     def calculate_avg(self, cmp_list):
         return sum(cmp_list) / len(cmp_list)
@@ -335,55 +344,55 @@ class GPT_Evaluator():
 # tqdm(range(len(self.explanations)))
 
 if __name__ == "__main__":
-    response_filename = "gpt_response_EP.pickle"
-    label_filename = "labels_EP.pickle"
-    #EP
+    response_filename = "LIME_explanations_PE.pickle"
+    label_filename = "labels_PE.pickle"
+    #PE
     messages = [
         {
-            "role": "system",
-            "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
+        "role": "system",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nThen, analyze how important every single word and punctuation token in the review was to your classification. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation token in the sentence in a format of Python list of tuples. Each word or punctuation is separated by a space.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n(<int classification>, <float confidence>)\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]"
         }
     ]
-    evaluator = GPT_Evaluator(response_filename=response_filename, PE=False, messages=messages, label_filename=label_filename)
+    evaluator = GPT_Evaluator(response_filename=response_filename, PE=True, messages=messages, label_filename=label_filename)
 
     
 
     print("Input File: " + response_filename)
-    evaluator.process_GPT_input()
-    evaluator.print_fail_rate()
-    evaluator.reset_fails()
+    evaluator.process_LIME_input()
+    # evaluator.print_fail_rate()
+    # evaluator.reset_fails()
     
-    accuracy = evaluator.calculate_accuracy()
-    print("Accuracy: ", str(accuracy))
+    # accuracy = evaluator.calculate_accuracy()
+    # print("Accuracy: ", str(accuracy))
 
     gpt_comprehensiveness = evaluator.calculate_comprehensiveness()
-    print("GPT Comprehensiveness: ", str(gpt_comprehensiveness))
+    print("LIME Comprehensiveness: ", str(gpt_comprehensiveness))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
 
     gpt_sufficiency = evaluator.calculate_sufficiency()
-    print("GPT Sufficiency: ", str(gpt_sufficiency))
+    print("LIME Sufficiency: ", str(gpt_sufficiency))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
 
     gpt_df_mit = evaluator.calculate_DF_MIT()
-    print("GPT DF_MIT: ", str(gpt_df_mit))
+    print("LIME DF_MIT: ", str(gpt_df_mit))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
 
     gpt_df_frac = evaluator.calculate_DF_Frac()
-    print("GPT DF_Frac: ", str(gpt_df_frac))
+    print("LIME DF_Frac: ", str(gpt_df_frac))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
 
     gpt_del_rank_correlation = evaluator.calculate_del_rank_correlation()
-    print("GPT Deletion Rank Correlation: ", str(gpt_del_rank_correlation))
+    print("LIME Deletion Rank Correlation: ", str(gpt_del_rank_correlation))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
 
-    metric_values = [accuracy, gpt_comprehensiveness, gpt_sufficiency,
+    metric_values = [gpt_comprehensiveness, gpt_sufficiency,
                      gpt_df_mit, gpt_df_frac, gpt_del_rank_correlation]
-    metric_names = ["Accuracy", "Comprehensivness", "Sufficiency", "DF_MIT", "DF_Frac", "Deletion Rank Correlation"]
+    metric_names = ["Comprehensivness", "Sufficiency", "DF_MIT", "DF_Frac", "Deletion Rank Correlation"]
     metric_df = pd.DataFrame(metric_values, metric_names)
     print(metric_df)
     print("\nComplete!")
