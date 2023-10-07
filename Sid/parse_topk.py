@@ -90,7 +90,7 @@ def parse_topk(response, k, sentence):
     connected = ""
     for elem in response.splitlines():
         connected += elem.strip("\n")
-    wsf = 0
+    wsf = 0 #words so far
     tkns_list = connected.split(" ")
     word_list = []
     number_list = []
@@ -105,7 +105,7 @@ def parse_topk(response, k, sentence):
             else:
                 other_words.append(word)
         
-        if(not isinstance(number_list[0], int) or not isinstance(number_list[1], float)):
+        if(not isinstance(number_list[0], int) or not isinstance(number_list[1], float) or wsf != k):
            raise Exception
         for word in word_list:
            if word not in connected.split(" "):
