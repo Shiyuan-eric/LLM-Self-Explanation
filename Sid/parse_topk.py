@@ -98,7 +98,7 @@ def parse_topk(response, k, sentence):
     try:
         for word in tkns_list:
             if wsf < k and word[-1] == "," and not bool(re.search(r'\d', word[:-1])):
-                word_list.append(word)
+                word_list.append(word[:-1])
                 wsf += 1
             elif (word[-1] == "," and word[:-1].replace(".", "").isnumeric()) or word.replace(".", "").isnumeric():
                 number_list.append(eval(word[:-1]))
