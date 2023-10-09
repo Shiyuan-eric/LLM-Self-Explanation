@@ -75,7 +75,7 @@ def topk_sufficiency(sentence: str, word_saliency_list: list, PE: bool):
         new_result = get_E_P_result_P_Only(sentence=ss, prompt=e_p_msg(few_shot=False))
     og_score =  og_score[1] if og_score[0] == 1 else 1 - og_score[1]
     new_result = new_result[1] if new_result[0] == 1 else 1 - new_result[1]
-    return (og_score-new_result)
+    return (abs(og_score-new_result))
 
 def topk_dfmit(sentence: str, word_saliency_list: list, PE: bool):
     sentences = sentence.split()
@@ -99,7 +99,7 @@ def topk_dfmit(sentence: str, word_saliency_list: list, PE: bool):
 def main():
     dataset = load_dataset('sst', split='test')
     dataset = dataset.shuffle(seed=8)['sentence']
-    dataset = dataset[:5:]
+    dataset = dataset[:100:]
     PE_Natural_saliency_list = generating_natural_PE_saliency_list()
     EP_Natural_saliency_list = generating_natural_EP_saliency_list()
     pe_comp = []
