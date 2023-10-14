@@ -1,6 +1,8 @@
 import pickle
 from datasets import load_dataset
 import random
+import numpy as np
+import matplotlib.pyplot as plt
 
 random_range = 10e-4
 random.seed(0)
@@ -179,14 +181,112 @@ def main():
     size = 100
     dataset = load_dataset('sst', split='test')
     dataset = dataset.shuffle(seed=8)['sentence']
-    PE_word_saliency_list, PE_attribute_val = generating_PE_word_saliency_list()
-    EP_word_saliency_list, EP_attribute_val= generating_EP_word_saliency_list()
+    # PE_word_saliency_list, PE_attribute_val = generating_PE_word_saliency_list()
+    # EP_word_saliency_list, EP_attribute_val= generating_EP_word_saliency_list()
     PE_Occlusion_word_saliency_list, PE_Occlusion_attribute_val = generating_PE_Occlusion_saliency_list()
-    EP_Occlusion_word_saliency_list, EP_Occlusion_attribute_val = generating_EP_Occlusion_saliency_list()
-    PE_LIME_word_saliency_list, PE_LIME_attribute_val = generating_PE_LIME_saliency_list(dataset)
-    EP_LIME_word_saliency_list, EP_LIME_attribute_val = generating_EP_LIME_saliency_list(dataset)
-    PE_Natural_saliency_list = generating_natural_PE_saliency_list()
+    # EP_Occlusion_word_saliency_list, EP_Occlusion_attribute_val = generating_EP_Occlusion_saliency_list()
+    # PE_LIME_word_saliency_list, PE_LIME_attribute_val = generating_PE_LIME_saliency_list(dataset)
+    # EP_LIME_word_saliency_list, EP_LIME_attribute_val = generating_EP_LIME_saliency_list(dataset)
+    # PE_Natural_saliency_list = generating_natural_PE_saliency_list()
     EP_Natural_saliency_list = generating_natural_EP_saliency_list()
+    print(PE_Occlusion_attribute_val)
+
+def process():
+    fn = 'gpt_response_EP.pickle'
+    d = pickle.load(open(fn, 'rb'))
+    ep_sent = 'Never engaging , utterly predictable and completely void of anything remotely interesting or suspenseful .'
+    idx = list(d.keys()).index(ep_sent)
+    ep_vals = d[ep_sent]
+    ep_vals = eval(ep_vals.split('\n')[0])
+    _, ep_vals = map(list, zip(*ep_vals))
+    print(ep_vals)
+
+    fn = 'EP_Occlusion_Result_Predict'
+    d = pickle.load(open(fn, 'rb'))
+    ep_occl_vals = [d[1][idx][i] for i in range(15)]
+    print(ep_occl_vals)
+
+    fn = 'LIME_response_EP_0_100.pickle'
+    d = pickle.load(open(fn, 'rb'))
+    for exp in d:
+        if ' '.join(exp[1]) == ep_sent:
+            break
+    exp_dict = {e[0]: e[1][0] for e in exp[0]}
+    ep_lime_vals = [exp_dict[w] for w in ep_sent.split(' ')]
+    print(ep_lime_vals)
+
+    fn = 'parse_topk_EP.pickle'
+    d = pickle.load(open(fn, 'rb'))
+    words = d[ep_sent][0]
+    ep_topk_idxs = [int(w in words) for w in ep_sent.split()]
+    print(ep_topk_idxs)
+
+    assert len(ep_vals)==len(ep_occl_vals)==len(ep_lime_vals)==len(ep_topk_idxs)
+
+
+    fn = 'gpt_response_PE.pickle'
+    d = pickle.load(open(fn, 'rb'))
+    pe_sent = "( A ) superbly controlled , passionate adaptation of Graham Greene 's 1955 novel ."
+    idx = list(d.keys()).index(pe_sent)
+
+    pe_vals = d[pe_sent]
+    pe_vals = eval(pe_vals.split('\n')[1])
+    _, pe_vals = map(list, zip(*pe_vals))
+    pe_vals.insert(pe_vals.index(0.6), 0.6)
+    print(pe_vals)
+
+    fn = 'PE_Occlusion_Result_Predict'
+    d = pickle.load(open(fn, 'rb'))
+    pe_occl_vals = [d[1][idx][i] for i in range(15)]
+    print(pe_occl_vals)
+
+    fn = 'LIME_explanations_PE.pickle'
+    d = pickle.load(open(fn, 'rb'))
+    for exp in d:
+        if ' '.join(exp[1]) == pe_sent:
+            break
+    exp_dict = {e[0]: e[1][0] for e in exp[0]}
+    pe_lime_vals = [exp_dict[w] for w in pe_sent.split(' ')]
+    print(pe_lime_vals)
+
+    fn = 'parse_topk_PE.pickle'
+    d = pickle.load(open(fn, 'rb'))
+    words = d[pe_sent][0]
+    pe_topk_idxs = [int(w in words) for w in pe_sent.split()]
+
+    assert len(pe_vals)==len(pe_occl_vals)==len(pe_lime_vals)==len(pe_topk_idxs)
+
+    plt.figure(figsize=[10, 3.5])
+    
+    plt.subplot(2, 1, 1)
+    xs = np.arange(15)
+    plt.bar(xs-0.2, ep_occl_vals, color='C0', width=0.2, label='E-P Occlusion')
+    plt.bar(xs, ep_lime_vals, color='C1', width=0.2, label='E-P LIME')
+    plt.bar(xs+0.2, ep_vals, color='C2', width=0.2, label='E-P SelfExp')
+    xmin, xmax, ymin, ymax = plt.axis()
+    for i in range(0, 14):
+        plt.plot([i+0.5, i+0.5], [ymin, ymax], 'C7--', lw=0.5)
+    plt.axis([-0.5, 14.5, ymin, ymax])
+    plt.legend(loc='lower right', fontsize=8)
+    plt.xticks(xs, ep_sent.split(), rotation=0, ha='center', fontsize=8)
+
+    plt.subplot(2, 1, 2)
+    xs = np.arange(15)
+    plt.bar(xs-0.2, pe_occl_vals, color='C0', width=0.2, label='P-E Occlusion')
+    plt.bar(xs, pe_lime_vals, color='C1', width=0.2, label='P-E LIME')
+    plt.bar(xs+0.2, pe_vals, color='C2', width=0.2, label='P-E SelfExp')
+    xmin, xmax, ymin, ymax = plt.axis()
+    for i in range(0, 14):
+        plt.plot([i+0.5, i+0.5], [ymin, ymax], 'C7--', lw=0.5)
+    plt.axis([-0.5, 14.5, ymin, ymax])
+    plt.legend(loc='upper right', fontsize=8)
+    pe_words = pe_sent.split()
+    plt.xticks(xs, pe_words, rotation=0, ha='center', fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig('exp_visualization.pdf', bbox_inches='tight')
+    plt.show()
 
 if __name__ == "__main__":
-    main()
+    process()
+
