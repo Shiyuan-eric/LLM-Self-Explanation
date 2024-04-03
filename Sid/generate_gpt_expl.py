@@ -1,15 +1,18 @@
-import openai
-from datasets import load_dataset
-import datasets
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-import pickle
-import getopt
-import sys
-import os
 import time
+import os
+import sys
+import getopt
+import pickle
+from tqdm import tqdm
+from torch.utils.data import DataLoader
+import torch.nn.functional as F
+import torch.nn as nn
+import datasets
+from datasets import load_dataset
+import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 # Prediction Only
 # MESSAGES = [
@@ -53,7 +56,7 @@ print("loaded dataset and device")
 sentences = []
 labels = []
 count = 0
-num_examples = 100
+num_examples = 2
 for batch in dataloader:
     #  print(batch)
     if count == num_examples:
@@ -63,7 +66,6 @@ for batch in dataloader:
     count += 1
 print("starting api calls")
 
-openai.api_key = os.OPENAI_API_KEY
 messages = MESSAGES[:]
 responses = {}
 
@@ -73,31 +75,29 @@ responses = {}
 def generate_response(model=MODEL):
     while True:
         try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                temperature=0,
-                max_tokens=1024,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
+            response = client.chat.completions.create(model=model,
+                                                      messages=messages,
+                                                      temperature=0,
+                                                      max_tokens=1024,
+                                                      top_p=1,
+                                                      frequency_penalty=0,
+                                                      presence_penalty=0)
             break
-        except openai.error.RateLimitError as e:
+        except openai.RateLimitError as e:
             retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
             print(f"Rate limit exceeded. Retrying in {retry_time} seconds...")
             time.sleep(retry_time)
             continue
-        except openai.error.Timeout as e:
+        except openai.Timeout as e:
             print(f"Request timed out: {e}. Retrying in 10 seconds...")
             time.sleep(10)
             continue
-        except openai.error.APIError as e:
+        except openai.APIError as e:
             retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
             print(f"API error occurred. Retrying in {retry_time} seconds...")
             time.sleep(retry_time)
             continue
-        except openai.error.ServiceUnavailableError as e:
+        except openai.ServiceUnavailableError as e:
             print(f"Service is unavailable. Retrying in 10 seconds...")
             time.sleep(10)
             continue
@@ -110,6 +110,7 @@ for i in tqdm(range(num_examples)):
                     sentences[i] + POST_PHRASE})
     completion = generate_response(model=MODEL)
     responses[sentences[i]] = completion.choices[0].message.content
+    print(completion.choices[0].message.content)
     messages.pop()
 
 # Make sure to change file names if changing from PE

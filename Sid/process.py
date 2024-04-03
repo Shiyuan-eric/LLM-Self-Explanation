@@ -1,15 +1,17 @@
+from scipy import stats
+import pandas as pd
+import time
+import random
+import pickle
+from retry import retry
 import ast
+import os
 from tqdm import tqdm
 import openai
-from retry import retry
-import pickle
-import random
-import time
-import pandas as pd
-from scipy import stats
+from openai import OpenAI
 
-# Make this an env.
-openai.api_key = "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"
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # Model parameters for repeatability
 # Testing only PE for now
@@ -108,37 +110,35 @@ class GPT_Evaluator():
     def generate_response(self):
         while True:
             try:
-                response = openai.ChatCompletion.create(
-                    model=MODEL,
-                    messages=self.messages,
-                    temperature=TEMPERATURE,
-                    max_tokens=MAX_TOKENS,
-                    top_p=TOP_P,
-                    frequency_penalty=FREQUENCY_PENALTY,
-                    presence_penalty=PRESENCE_PENALTY
-                )
+                response = client.chat.completions.create(model=MODEL,
+                                                          messages=self.messages,
+                                                          temperature=TEMPERATURE,
+                                                          max_tokens=MAX_TOKENS,
+                                                          top_p=TOP_P,
+                                                          frequency_penalty=FREQUENCY_PENALTY,
+                                                          presence_penalty=PRESENCE_PENALTY)
                 break
-            except openai.error.RateLimitError as e:
+            except openai.RateLimitError as e:
                 retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
                 print(
                     f"Rate limit exceeded. Retrying in {retry_time} seconds...")
                 time.sleep(retry_time)
                 continue
-            except openai.error.Timeout as e:
+            except openai.Timeout as e:
                 print(f"Request timed out: {e}. Retrying in 10 seconds...")
                 time.sleep(10)
                 continue
-            except openai.error.APIError as e:
+            except openai.APIError as e:
                 retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
                 print(
                     f"API error occurred. Retrying in {retry_time} seconds...")
                 time.sleep(retry_time)
                 continue
-            except openai.error.ServiceUnavailableError as e:
+            except openai.ServiceUnavailableError as e:
                 print(f"Service is unavailable. Retrying in 10 seconds...")
                 time.sleep(10)
                 continue
-            except openai.error.APIConnectionError as e:
+            except openai.APIConnectionError as e:
                 print(f"Not connected to internet. Retrying in 300 seconds...")
                 time.sleep(300)
                 continue
@@ -149,7 +149,7 @@ class GPT_Evaluator():
         self.ovr_fails += self.fails
         self.ovr_total += self.total
         self.fails = 0
-        self.total = 0
+        self.total = 1
 
     # Parses GPT response into tuple containing GPT's prediction, confidence, and explanation
     def parse_completion(self, response):
@@ -385,8 +385,8 @@ class GPT_Evaluator():
 
 
 if __name__ == "__main__":
-    response_filename = "LIME_explanations_EP_try.pickle"
-    label_filename = "labels_EP.pickle"
+    response_filename = "gpt_response_PE.pickle"
+    label_filename = "labels_PE.pickle"
     # PE
     messages = [
         {
@@ -398,7 +398,7 @@ if __name__ == "__main__":
                               PE=False, messages=messages, label_filename=label_filename)
 
     print("Input File: " + response_filename)
-    evaluator.process_LIME_input()
+    evaluator.process_GPT_input()
     evaluator.print_fail_rate()
     evaluator.reset_fails()
 

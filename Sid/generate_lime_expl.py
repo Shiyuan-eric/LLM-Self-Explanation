@@ -1,21 +1,21 @@
 # LIME
+import os
+import retry
+from timeit import default_timer as timer
+from tqdm import tqdm
+import numpy as np
+from lime.lime_text import IndexedString
+from lime.lime_text import LimeTextExplainer
+from lime import lime_text
+import random
+import time
+import ast
 import lime
 import pickle
 import openai
-import ast
-import time
-import random
-from lime import lime_text
-from lime.lime_text import LimeTextExplainer
-from lime.lime_text import IndexedString
-import numpy as np
-from tqdm import tqdm
-from timeit import default_timer as timer
-import retry
-import os
-import time
+from openai import OpenAI
 
-openai.api_key = "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"
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 TEMPERATURE = 0
@@ -43,37 +43,35 @@ class LimeExplanationGenerator():
     def generate_response(self):
         while True:
             try:
-                response = openai.ChatCompletion.create(
-                    model=MODEL,
-                    messages=self.messages,
-                    temperature=TEMPERATURE,
-                    max_tokens=1024,
-                    top_p=1,
-                    frequency_penalty=0,
-                    presence_penalty=0
-                )
+                response = client.chat.completions.create(model=MODEL,
+                                                          messages=self.messages,
+                                                          temperature=TEMPERATURE,
+                                                          max_tokens=1024,
+                                                          top_p=1,
+                                                          frequency_penalty=0,
+                                                          presence_penalty=0)
                 break
-            except openai.error.RateLimitError as e:
+            except openai.RateLimitError as e:
                 retry_time = e.retry_after if hasattr(e, 'retry_after') else 60
                 print(
                     f"Rate limit exceeded. Retrying in {retry_time} seconds...")
                 time.sleep(retry_time)
                 continue
-            except openai.error.Timeout as e:
+            except openai.Timeout as e:
                 print(f"Request timed out: {e}. Retrying in 10 seconds...")
                 time.sleep(10)
                 continue
-            except openai.error.APIError as e:
+            except openai.APIError as e:
                 retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
                 print(
                     f"API error occurred. Retrying in {retry_time} seconds...")
                 time.sleep(retry_time)
                 continue
-            except openai.error.ServiceUnavailableError as e:
+            except openai.ServiceUnavailableError as e:
                 print(f"Service is unavailable. Retrying in 10 seconds...")
                 time.sleep(10)
                 continue
-            except openai.error.APIConnectionError as e:
+            except openai.APIConnectionError as e:
                 print(f"Not connected to internet. Retrying in 300 seconds...")
                 time.sleep(300)
                 continue

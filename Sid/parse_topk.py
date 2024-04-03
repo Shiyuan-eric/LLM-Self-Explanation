@@ -1,3 +1,4 @@
+from datasets import load_dataset
 import re
 import datasets
 import torch.nn as nn
@@ -7,9 +8,12 @@ from tqdm import tqdm
 import pickle
 import getopt
 import sys
+import os
 import time
 import openai
-from datasets import load_dataset
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 MESSAGES = [
@@ -47,7 +51,6 @@ for batch in dataloader:
     count += 1
 print("starting api calls")
 
-openai.api_key = "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"
 messages = []
 responses = {}
 
@@ -55,31 +58,29 @@ responses = {}
 def generate_response(model=MODEL):
     while True:
         try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                temperature=0,
-                max_tokens=1024,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
+            response = client.chat.completions.create(model=model,
+                                                      messages=messages,
+                                                      temperature=0,
+                                                      max_tokens=1024,
+                                                      top_p=1,
+                                                      frequency_penalty=0,
+                                                      presence_penalty=0)
             break
-        except openai.error.RateLimitError as e:
+        except openai.RateLimitError as e:
             retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
             print(f"Rate limit exceeded. Retrying in {retry_time} seconds...")
             time.sleep(retry_time)
             continue
-        except openai.error.Timeout as e:
+        except openai.Timeout as e:
             print(f"Request timed out: {e}. Retrying in 10 seconds...")
             time.sleep(10)
             continue
-        except openai.error.APIError as e:
+        except openai.APIError as e:
             retry_time = e.retry_after if hasattr(e, 'retry_after') else 30
             print(f"API error occurred. Retrying in {retry_time} seconds...")
             time.sleep(retry_time)
             continue
-        except openai.error.ServiceUnavailableError as e:
+        except openai.ServiceUnavailableError as e:
             print(f"Service is unavailable. Retrying in 10 seconds...")
             time.sleep(10)
             continue
