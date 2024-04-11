@@ -1,0 +1,323 @@
+from scipy import stats
+import pandas as pd
+import time
+import random
+import pickle
+import ast
+import os
+import pickle
+from tqdm import tqdm
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+
+class Model_Evaluator():
+
+    def __init__(self, model, tokenizer, response_filename, PE, messages, label_filename, max_tokens):
+
+        self.messages = messages
+        self.tokenizer = tokenizer
+        self.model = model
+        self.max_tokens = max_tokens
+        self.fails = 0
+        self.total = 1
+        self.ovr_fails = 0
+        self.ovr_total = 1
+        self.response_filename = response_filename
+        self.PE = PE
+        self.label_filename = label_filename
+
+        self.pre_phrase = "<review> "
+        self.post_phrase = " <review>"
+
+        self.random_range = 10e-4
+        random.seed(0)
+
+    # Opens LIME responses from pickle file
+    def process_LIME_input(self):
+        with open(self.response_filename, 'rb') as handle:
+            explanations = pickle.load(handle)
+        self.explanations = explanations
+
+    # Processes the raw mixtral responses into the explanation format
+    def process_model_input(self):
+        with open(self.response_filename, 'rb') as handle:
+            responses = pickle.load(handle)
+        self.explanations = []
+        self.model_labels = []
+        self.sentences = []
+        for response in responses.items():
+            (prediction, confidence, exp) = self.parse_completion(response[1])
+            self.sentences.append(response[0])
+            self.model_labels.append((prediction, confidence))
+            new_exp = []
+            orig_tokens = response[0].split(' ')
+            model_tokens = []
+            for i in range(len(exp)):
+                model_tokens.append(exp[i][0])
+
+            # match gpt token saliency values to original tokens (small epsilon if no match)
+            for i in range(len(orig_tokens)):
+                try:
+                    idx = model_tokens.index(orig_tokens[i])
+                except:
+                    idx = -1
+                if idx != -1:
+                    new_exp.append(
+                        (model_tokens[idx], (exp[idx][1] + random.uniform(-1 * self.random_range, self.random_range), i)))
+                    model_tokens[idx] = ''
+                else:
+                    new_exp.append(
+                        (orig_tokens[i], (random.uniform(-1 * self.random_range, self.random_range), i)))
+
+            new_exp = sorted(new_exp, key=lambda x: x[1][0], reverse=True)
+            self.explanations.append((new_exp, orig_tokens))
+
+    # Function to query the openai API and generate a gpt response given a prompt
+    def generate_response(self):
+        inputs = self.tokenizer.apply_chat_template(
+            self.messages, return_tensors="pt").to("cuda")
+        outputs = self.model.generate(
+            inputs, pad_token_id=self.tokenizer.eos_token_id, max_new_tokens=self.max_tokens)
+        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        last_instruction_idx = response.rindex("[/INST]") + 7
+        return response[last_instruction_idx:]
+
+    # Reset
+    def reset_fails(self):
+        self.ovr_fails += self.fails
+        self.ovr_total += self.total
+        self.fails = 0
+        self.total = 1
+
+    # Parses model response into tuple containing model's prediction, confidence, and explanation
+    def parse_completion(self, response):
+        lines = response.splitlines()
+        self.total += 1
+        try:
+            if self.PE:
+                exp = ast.literal_eval(lines[1])
+                (prediction, confidence) = ast.literal_eval(lines[0])
+            else:
+                exp = ast.literal_eval(lines[0])
+                (prediction, confidence) = ast.literal_eval(lines[1])
+        except:
+            if not self.PE:
+                try:
+                    # Trying to see if the potential error was that there was a newline(something I saw a few times)
+                    exp = ast.literal_eval(lines[0])
+                    prediction, confidence = ast.literal_eval(lines[2])
+                    return (prediction, confidence, exp)
+                except:
+                    pass
+            # GPT didn't give an answer in the required format (more likely an invalid response)
+            # So, make everything 0
+            exp = []
+            for token in response.split(' '):
+                exp.append((token, 0.0))
+            (prediction, confidence) = (0, 0.5)
+            self.fails += 1
+        return (prediction, confidence, exp)
+
+    # Calculates accuracy
+    def calculate_accuracy(self):
+        print("Calculating Accuracy...")
+        with open(self.label_filename, 'rb') as handle:
+            labels = pickle.load(handle)
+        correct = 0.0
+        total = 0.0
+        for i in tqdm(range(len(self.model_labels))):
+            lb = (labels[i] - 0.5 > 0)
+            if (self.model_labels[i][0] == lb):
+                correct += 1
+            total += 1
+
+        return correct / total
+
+    # Generates and parses model response
+    def get_completion(self):
+        model_response = self.generate_response()
+        return self.parse_completion(model_response)
+
+    # Implements comprehensiveness metric (DeYoung et al., 2020)
+    def calculate_comprehensiveness(self):
+        print("Calculating Comprehensivness...")
+        compr_list = []
+        for i in tqdm(range(len(self.explanations))):
+            ret = 0
+            explanation = self.explanations[i][0]
+            tkns = self.explanations[i][1][:]
+            masked_tkns = tkns[:]
+            phrase = ' '.join(tkns)
+            self.messages.append(
+                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            (pre_y_label, pre_y_prob, __) = self.get_completion()
+            self.messages.pop()
+            for j in range(len(explanation)):
+                # remove the tokens one by one
+                index = explanation[j][1][1]
+                word = tkns[index]
+                masked_tkns[index] = ''
+                phrase = ' '.join([t for t in masked_tkns if t != ''])
+
+                # All tokens removed
+                if (phrase == ""):
+                    ret += pre_y_prob - 0.5
+                    continue
+                self.messages.append(
+                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                (y_label, y_prob, __) = self.get_completion()
+                self.messages.pop()
+                pre_y_prob = pre_y_prob if pre_y_label == 1 else (
+                    1 - pre_y_prob)
+                y_prob = y_prob if y_label == 1 else (1 - y_prob)
+                ret += pre_y_prob - y_prob
+            # Add empty phrase as well so +1
+            ret = ret / (len(explanation) + 1)
+            compr_list.append(ret)
+        return self.calculate_avg(compr_list)
+
+    # Implements sufficiency metric (DeYoung et al., 2020)
+    def calculate_sufficiency(self):
+        print("Calculating Sufficiency...")
+        suff_list = []
+        for i in tqdm(range(len(self.explanations))):
+            ret = 0
+            explanation = self.explanations[i][0]
+            tkns = self.explanations[i][1][:]
+            masked_tkns = ['' for token in tkns]
+            phrase = ' '.join(tkns)
+            self.messages.append(
+                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            (pre_y_label, pre_y_prob, __) = self.get_completion()
+            self.messages.pop()
+            pre_y_prob = pre_y_prob if pre_y_label == 1 else (1 - pre_y_prob)
+            y_prob = 0.5
+            ret += abs(pre_y_prob - y_prob)
+            for j in range(len(explanation)):
+                # add tokens back one by one
+                index = explanation[j][1][1]
+                masked_tkns[index] = tkns[index]
+                phrase = ' '.join([t for t in masked_tkns if t != ''])
+
+                self.messages.append(
+                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                (y_label, y_prob, __) = self.get_completion()
+                self.messages.pop()
+                y_prob = y_prob if y_label == 1 else (1 - y_prob)
+                ret += abs(pre_y_prob - y_prob)
+
+            ret = ret / (len(explanation) + 1)
+            suff_list.append(ret)
+
+        return self.calculate_avg(suff_list)
+
+    # Returns average of a list
+    def calculate_avg(self, cmp_list):
+        return sum(cmp_list) / len(cmp_list)
+
+    # Implements DF_MIT metric (Chrysostomou and Ale- tras, 2021)
+    def calculate_DF_MIT(self):
+        print("Calculating DF_MIT...")
+        flipped = 0
+        total = 0
+        for i in tqdm(range(len(self.explanations))):
+            explanation = self.explanations[i][0]
+            tkns = self.explanations[i][1][:]
+            phrase = ' '.join(tkns)
+            og_phrase = phrase
+            self.messages.append(
+                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            (pre_y_label, pre_y_prob, __) = self.get_completion()
+            npre_y_prob = pre_y_prob if pre_y_label == 1 else (1 - pre_y_prob)
+            self.messages.pop()
+            if (len(explanation) == 0):
+                continue
+            index = explanation[0][1][1]
+            word = tkns.pop(index)
+
+            phrase = ' '.join(tkns)  # phrase w/o most important token
+            tkns.insert(index, word)  # restore tokens
+            self.messages.append(
+                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            (y_label, y_prob, __) = self.get_completion()
+            ny_prob = y_prob if y_label == 1 else (1 - y_prob)
+            self.messages.pop()
+
+            if y_label != pre_y_label:
+                # print("(%d, %f) --> (%d, %f)" %
+                #   (pre_y_label, pre_y_prob, y_label, y_prob))
+                if ((ny_prob > 0.5 and npre_y_prob <= 0.5) or (ny_prob <= 0.5 and npre_y_prob > 0.5)):
+                    flipped += 1
+            elif ((ny_prob > 0.5 and npre_y_prob <= 0.5) or (ny_prob <= 0.5 and npre_y_prob > 0.5)):
+                print("(%d, %f) --> (%d, %f)" %
+                      (pre_y_label, pre_y_prob, y_label, y_prob))
+                flipped += 1
+            total += 1
+        return flipped/total
+
+    # Implements DF_Frac metric (Serrano and Smith, 2019)
+    def calculate_DF_Frac(self):
+        print("Calculating DF_Frac...")
+        frac_list = []
+
+        for i in tqdm(range(len(self.explanations))):
+            explanation = self.explanations[i][0]
+            tkns = self.explanations[i][1][:]
+            masked_tkns = [token for token in tkns]
+            phrase = ' '.join(tkns)
+            self.messages.append(
+                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            (pre_y_label, pre_y_prob, __) = self.get_completion()
+            self.messages.pop()
+            num_taken = len(explanation) + 1
+            for j in range(len(explanation)):
+                index = explanation[j][1][1]
+                masked_tkns[index] = ''
+                phrase = ' '.join([t for t in masked_tkns if t != ''])
+                self.messages.append(
+                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                (y_label, y_prob, __) = self.get_completion()
+                self.messages.pop()
+                if y_label != pre_y_label:
+                    num_taken = j + 1  # took j+1 tokens to flip decision
+                    break
+            frac_list.append(num_taken/(len(explanation) + 1))
+
+        return self.calculate_avg(frac_list)
+
+    # Implements deletion rank correlation metric (Alvarez-Melis and Jaakkola, 2018b)
+    def calculate_del_rank_correlation(self):
+        print("Calculating Deletion Rank Correlation...")
+        ret_list = []
+        for i in tqdm(range(len(self.explanations))):
+            explanation = self.explanations[i][0][:]
+            tkns = self.explanations[i][1][:]
+            phrase = ' '.join(tkns)
+            self.messages.append(
+                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            (pre_y_label, pre_y_prob, __) = self.get_completion()
+            self.messages.pop()
+            delta_f = []
+            e = []
+            for j in range(len(explanation)):
+                index = explanation[j][1][1]
+                word = tkns[index]
+                tkns[index] = ""
+                self.messages.append(
+                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                (y_label, y_prob, __) = self.get_completion()
+                self.messages.pop()
+                delta_f.append(pre_y_prob - y_prob +
+                               random.uniform(-1 * self.random_range, self.random_range))
+                e.append(
+                    explanation[j][1][0] + random.uniform(-1 * self.random_range, self.random_range))
+                tkns[index] = word
+
+            # spearman coeff between delta_f and e
+            ret_list.append((stats.spearmanr(delta_f, e)).correlation)
+        return self.calculate_avg(ret_list)
+
+    def print_fail_rate(self):
+        print("Fails/Total = %d/%d = %.2f%%" %
+              (self.fails, self.total, float(self.fails / self.total)))
