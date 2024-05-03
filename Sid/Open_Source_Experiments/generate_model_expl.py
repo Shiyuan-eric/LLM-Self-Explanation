@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
-import openai
 
 # PE (PredictThenExplain prompt)
 MESSAGES = [
