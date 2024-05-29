@@ -1,0 +1,14 @@
+Input File: mistral7B_response_PE.pickle
+Mistral Comprehensiveness:  0.17319779831941173
+Mistral Sufficiency:  0.2346288699621669
+Mistral DF_MIT:  0.2
+Mistral DF_Frac:  0.5685102682008578
+Mistral Deletion Rank Correlation:  -0.03865258024028806
+                                  0
+Comprehensivness           0.173198
+Sufficiency                0.234629
+DF_MIT                     0.200000
+DF_Frac                    0.568510
+Deletion Rank Correlation -0.038653
+
+Complete!

@@ -1,0 +1,13 @@
+Mistral Comprehensiveness:  0.19508829744414416
+Mistral Sufficiency:  0.23761209266716285
+Mistral DF_MIT:  0.2
+Mistral DF_Frac:  0.6151763185874345
+Mistral Deletion Rank Correlation:  0.02849723065378159
+                                  0
+Comprehensivness           0.195088
+Sufficiency                0.237612
+DF_MIT                     0.200000
+DF_Frac                    0.615176
+Deletion Rank Correlation  0.028497
+
+Complete!
