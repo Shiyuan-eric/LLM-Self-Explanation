@@ -1,0 +1,14 @@
+Input File: llama_LIME_response_PE_0_100.pickle
+Comprehensiveness:  0.21434085184981425
+Sufficiency:  0.1808772143898888
+DF_MIT:  0.07
+DF_Frac:  0.5357714262390754
+Deletion Rank Correlation:  0.011685675241174103
+                                  0
+Comprehensivness           0.214341
+Sufficiency                0.180877
+DF_MIT                     0.070000
+DF_Frac                    0.535771
+Deletion Rank Correlation  0.011686
+
+Complete!

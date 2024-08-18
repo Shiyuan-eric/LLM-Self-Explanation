@@ -76,12 +76,56 @@ def generate_llama_response(messages):
         max_new_tokens=2048,
         pad_token_id = tokenizer.eos_token_id,
         eos_token_id=terminators,
-        # do_sample=True,
+        do_sample=False,
         # temperature=0.6,
         # top_p=0.9,
     )
     response = outputs[0][input_ids.shape[-1]:]
     return(tokenizer.decode(response, skip_special_tokens=True))
+
+def parse_completion(response, sentence, PE, p_only):
+    lines = response.splitlines()
+    lines = [string for string in lines if string]
+    lines = [string for string in lines if re.search(r'\d', string)]
+    # parse the prediction and confidence
+    try:
+        if p_only:
+            (prediction, confidence) = ast.literal_eval(lines[0])
+            exp = None
+        elif PE:
+            exp = ast.literal_eval(lines[1])
+            cleaned_string = re.sub(r'[^0-9,.()]+', '', lines[0])
+            (prediction, confidence) = ast.literal_eval(cleaned_string)
+        else:
+            exp = ast.literal_eval(lines[0])
+            cleaned_string = re.sub(r'[^0-9,.()]+', '', lines[1])
+            (prediction, confidence) = ast.literal_eval(cleaned_string)
+    except:
+        if not PE:
+            try:
+                # Trying to see if the potential error was that there was a newline(something I saw a few times)
+                cleaned_string = re.sub(r'[^0-9,.()]+', '', lines[2])
+                prediction, confidence = ast.literal_eval(cleaned_string)
+            except:
+                pass
+        (prediction, confidence) = (0, 0.5)
+    
+    #parse the explanation
+    try:
+        if p_only:
+            exp = None
+        elif PE:
+            exp = ast.literal_eval(lines[1])
+        else:
+            exp = ast.literal_eval(lines[0])
+    except:
+        # GPT didn't give an answer in the required format (more likely an invalid response)
+        # So, make everything 0
+        exp = []
+        for token in sentence.split(' '):
+            exp.append((token, 0.0))
+        
+    return (prediction, confidence, exp)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='This program generates the explanation from SST dataset with PE or EP methods without using any additional methods')
@@ -121,7 +165,8 @@ if __name__ == "__main__":
     
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME, torch_dtype=torch.float16).to(device)
-    
+    model.generation_config.temperature=None
+    model.generation_config.top_p=None
     print(f"loaded model: {MODEL_NAME}")
     
     if args.pe:

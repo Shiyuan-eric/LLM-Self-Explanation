@@ -17,14 +17,38 @@ import argparse
 random.seed(0)
 random_range = 10e-4
 
+# def generate_response():
+#     inputs = tokenizer.apply_chat_template(
+#         messages, return_tensors="pt").to("cuda")
+#     outputs = model.generate(
+#         inputs, pad_token_id=tokenizer.eos_token_id, max_new_tokens=1024)
+#     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+#     last_instruction_idx = response.rindex("[/INST]") + 7
+#     return response[last_instruction_idx:]
+
 def generate_response():
-    inputs = tokenizer.apply_chat_template(
-        messages, return_tensors="pt").to("cuda")
+    input_ids = tokenizer.apply_chat_template(
+        messages,
+        add_generation_prompt=True,
+        return_tensors="pt"
+    ).to(model.device)
+    
+    terminators = [
+        tokenizer.eos_token_id,
+        tokenizer.convert_tokens_to_ids("<|eot_id|>")
+    ]
+    
     outputs = model.generate(
-        inputs, pad_token_id=tokenizer.eos_token_id, max_new_tokens=1024)
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    last_instruction_idx = response.rindex("[/INST]") + 7
-    return response[last_instruction_idx:]
+        input_ids,
+        max_new_tokens=2048,
+        pad_token_id = tokenizer.eos_token_id,
+        eos_token_id=terminators,
+        do_sample=False,
+        # temperature=0.0,
+        # top_p=0.9,
+    )
+    response = outputs[0][input_ids.shape[-1]:]
+    return(tokenizer.decode(response, skip_special_tokens=True))
 
 
 def topk_prompt(k, pe):
@@ -94,15 +118,18 @@ if __name__ == "__main__":
     PRE_PHRASE = "<review> "
     POST_PHRASE = " <review>"
     
-    MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
-    
+    # MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
+    MODEL_NAME = "meta-llama/Meta-Llama-3-8B-Instruct"
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(device)
     
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, padding_size='left')
     torch.cuda.empty_cache()
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME, torch_dtype=torch.float16).to(device)
-    
+    model.generation_config.temperature=None
+    model.generation_config.top_p=None
     
     dataset = load_dataset("sst")
     
@@ -131,9 +158,9 @@ if __name__ == "__main__":
         k = int(len(sentences[i].split(" ")) * 0.2)
         if k < 1:
             k = 1
-        messages.append({"role": "user", "content": topk_prompt(k, args.pe)})
-        messages.append(
-            {"role": "assistant", "content": "I understand. Please send a review and I will do my best to respond in the desired format."})
+        messages.append({"role": "system", "content": topk_prompt(k, args.pe)})
+        # messages.append(
+            # {"role": "assistant", "content": "I understand. Please send a review and I will do my best to respond in the desired format."})
         messages.append({"role": "user", "content": PRE_PHRASE +
                         sentences[i] + POST_PHRASE})
         completion = generate_response()
@@ -143,17 +170,17 @@ if __name__ == "__main__":
         print(expl)
         print(label)
         messages.pop()
-        messages.pop()
+        # messages.pop()
         messages.pop()
     
     # print(responses)
     if args.pe:
-        with open("topk_expl_PE.pickle", "wb") as handle:
+        with open("llama_topk_expl_PE.pickle", "wb") as handle:
             pickle.dump(responses, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        with open("topk_labels_PE.pickle", "wb") as handle:
+        with open("llama_topk_labels_PE.pickle", "wb") as handle:
             pickle.dump(model_labels, handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
-        with open("topk_expl_EP.pickle", "wb") as handle:
+        with open("llama_topk_expl_EP.pickle", "wb") as handle:
             pickle.dump(responses, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        with open("topk_labels_EP.pickle", "wb") as handle:
+        with open("llama_topk_labels_EP.pickle", "wb") as handle:
             pickle.dump(model_labels, handle, protocol=pickle.HIGHEST_PROTOCOL)

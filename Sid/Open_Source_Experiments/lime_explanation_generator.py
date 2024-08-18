@@ -10,12 +10,70 @@ import random
 import ast
 import pickle
 import re
+llama_P_MSG = [
+    {
+        "role": "system",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n(<int classification>, <float confidence>)"
+    }
+    ]
+
+llama_P_E_MSG = [
+    {
+        "role": "system",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nThen, analyze how important every single word and punctuation token in the review was to your classification. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation token in the sentence in a format of Python list of tuples. Each word or punctuation is separated by a space.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n(<int classification>, <float confidence>)\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]"
+    }
+    ]
+
+llama_E_P_MSG = [
+    {
+        "role": "system",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
+    }
+    ]
+
+mistral_P_MSG = [
+    {
+        "role": "user",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n(<int classification>, <float confidence>)"
+    },
+    {
+        "role": "assistant", "content": "I understand. Please send a review and I will do my best to respond in the desired format."
+    }
+    ]
+
+mistral_P_E_MSG = [
+    {
+        "role": "user",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. A review will be provided to you, and you must classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose. The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence. Output this in the Python tuple format (<int classification>, <float confidence>).\n\nThen, analyze how important every single word and punctuation token in the review was to your classification. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation token in the sentence in a format of Python list of tuples. Each word or punctuation is separated by a space.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n(<int classification>, <float confidence>)\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]"
+    },
+    {
+        "role": "assistant", "content": "I understand. Please send a review and I will do my best to respond in the desired format."
+    }
+    ]
+
+mistral_E_P_MSG = [
+    {
+        "role": "user",
+        "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
+    },
+    {
+        "role": "assistant", "content": "I understand. Please send a review and I will do my best to respond in the desired format."
+    }
+    ]
+
+def loadData(filename):
+    with open(filename, 'rb') as f:
+        loaded_data = pickle.load(f)
+    return loaded_data
+def storeData(filename, data):
+    with open(filename, "wb") as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 class LimeExplanationGenerator():
     # Init
-    def __init__(self, response_filename, model, tokenizer, max_tokens, PE, messages, start, end, mistral, llama):
+    def __init__(self, response_filename, model, tokenizer, max_tokens, PE, start, end, mistral, llama):
 
-        self.messages = messages
+        self.messages = ""
         with open(response_filename, 'rb') as handle:
             self.sentences = pickle.load(handle)
         self.sentences = self.sentences[start:end]
@@ -31,12 +89,28 @@ class LimeExplanationGenerator():
         self.PE = PE
         self.mistral = mistral
         self.llama = llama
+        if self.llama and self.PE:
+            self.cache_name = 'llama_pe_cache.pickle'
+        elif self.llama and self.PE == False:
+            self.cache_name = 'llama_ep_cache.pickle'
+        print("cache file:", self.cache_name)
 
         self.pre_phrase = "<review> "
         self.post_phrase = " <review>"
 
         self.random_range = 10e-4
         random.seed(0)
+    def init_message(self):
+        if self.PE:
+            if self.mistral:
+                self.messages = mistral_P_E_MSG.copy()
+            elif self.llama:
+                self.messages = llama_P_E_MSG.copy()
+        else:
+            if self.mistral:
+                self.messages = mistral_E_P_MSG.copy()
+            elif self.llama:
+                self.messages = llama_E_P_MSG.copy()
 
     def generate_mistral_response(self):
         inputs = self.tokenizer.apply_chat_template(
@@ -106,23 +180,42 @@ class LimeExplanationGenerator():
             (prediction, confidence) = (0, 0.5)
             self.fails += 1
         return (prediction, confidence, None)
+    
+    def get_result(self, phrase):
+        cache_dict = loadData(self.cache_name)
+        if phrase in cache_dict:
+            label, prob = cache_dict[phrase]
+        else:
+            self.init_message()
+            self.messages.append({"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            label, prob, _ = self.parse_completion(self.generate_response())
+            self.messages.pop()
+            cache_dict[phrase] = (label, prob)
+            storeData(self.cache_name, cache_dict)
+        return label, prob
 
     # predict_proba function returning GPT confidence for LimeTextExplainer
     def predict_proba(self, sentences):
         probs = np.zeros((len(sentences), 2), dtype=float)
         for i in range(len(sentences)):
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + sentences[i] + self.post_phrase})
-            (pred, conf, _) = self.parse_completion(
-                self.generate_response())
-            self.messages.pop()
+            phrase = sentences[i]
+            (pred, conf) = self.get_result(phrase)
+            # self.messages.append(
+                # {"role": "user", "content": self.pre_phrase + sentences[i] + self.post_phrase})
+            # (pred, conf, _) = self.parse_completion(
+                # self.generate_response())
+            # self.messages.pop()
             # print(i, pred)
-            if pred > 1:
-                pred = 1
-            elif pred < 0:
-                pred = 0
-            probs[i, pred] = conf
-            probs[i, 1-pred] = 1 - conf
+            try:
+                if pred > 1:
+                    pred = 1
+                elif pred < 0:
+                    pred = 0
+                probs[i, pred] = conf
+                probs[i, 1-pred] = 1 - conf
+            except:
+                probs[i, 1] = 0.5
+                probs[i, 0] = 0.5
         return probs
 
     # Uses LimeTextExplainer to compute LIME saliency

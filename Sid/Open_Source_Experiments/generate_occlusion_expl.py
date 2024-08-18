@@ -30,7 +30,7 @@ llama_P_E_MSG = [
 
 llama_E_P_MSG = [
     {
-        "role": "user",
+        "role": "system",
         "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
     }
     ]
@@ -65,7 +65,13 @@ mistral_E_P_MSG = [
     }
     ]
 
-
+def loadData(filename):
+    with open(filename, 'rb') as f:
+        loaded_data = pickle.load(f)
+    return loaded_data
+def storeData(filename, data):
+    with open(filename, "wb") as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 class OcclusionExplanationGenerator():
     def __init__(self, model, tokenizer, PE, max_tokens, dataset, device, noise, p_only, mistral, llama):
@@ -84,6 +90,14 @@ class OcclusionExplanationGenerator():
         self.p_only = p_only
         self.mistral = mistral
         self.llama = llama
+
+        if self.llama and self.PE and self.p_only == False:
+            self.cache_name = 'llama_pe_cache.pickle'
+        elif self.llama and self.PE == False and self.p_only == False:
+            self.cache_name = 'llama_ep_cache.pickle'
+        elif self.llama and self.p_only:
+            self.cache_name = 'llama_p_only_cache.pickle'
+        print("cache file:", self.cache_name)
 
         # self.pre_phrase = "<review> "
         # self.post_phrase = " <review>"
@@ -118,7 +132,7 @@ class OcclusionExplanationGenerator():
             max_new_tokens=2048,
             pad_token_id = self.tokenizer.eos_token_id,
             eos_token_id=terminators,
-            # do_sample=True,
+            do_sample=False,
             # temperature=0.6,
             # top_p=0.9,
         )
@@ -164,11 +178,7 @@ class OcclusionExplanationGenerator():
     def get_completion(self, message):
         model_response = self.generate_response(message)
         prediction, confidence, _ = self.parse_completion(model_response)
-        if prediction == 1:
-            score = confidence
-        else:
-            score = 1-confidence
-        return score
+        return prediction, confidence
 
     def generate_whole_prompt(self, sentence):
         if self.p_only:
@@ -194,6 +204,25 @@ class OcclusionExplanationGenerator():
             prompt.append({"role": "user", "content": f"<review> {sentence} <review>"})
         return prompt
 
+    def get_result(self, phrase):
+        try:
+            cache_dict = loadData(self.cache_name)
+        except:
+            cache_dict = dict()
+        if phrase in cache_dict:
+            label, prob = cache_dict[phrase]
+        else:
+            full_msg = self.generate_whole_prompt(phrase)
+            # self.init_message()
+            # self.messages.append({"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            label, prob = self.get_completion(full_msg)
+            cache_dict[phrase] = (label, prob)
+            storeData(self.cache_name, cache_dict)
+        if label == 1:
+            score = prob
+        else:
+            score = 1-prob
+        return score
 
     def compute_occlusion_saliency(self):
         # Model_Evaluator.get_completion()
@@ -202,28 +231,28 @@ class OcclusionExplanationGenerator():
         # else:
         #     msg = E_P_MSG
         if self.p_only:
-            print("Using p only mode.")
+            print(f"Using p only mode. mistral={args.mistral}, llama={args.llama}")
         elif self.PE:
-            print("Using PE mode.")
+            print(f"Using PE mode. mistral={args.mistral}, llama={args.llama}")
         else:
-            print("Using EP mode.")
+            print(f"Using EP mode. mistral={args.mistral}, llama={args.llama}")
 
         occlusion_output = []
         sentence_list = []
         count = 0
         output = list()
         for sentence in tqdm(self.dataset, desc="sentence processing", position=0):
-            full_msg = self.generate_whole_prompt(sentence)
+            # full_msg = self.generate_whole_prompt(sentence)
 
-            og_score = self.get_completion(full_msg)
+            og_score = self.get_result(sentence)
             # print("The original score is:", og_score)
             sentences = sentence.split()
             occlusion = {}
             for i in tqdm(range(len(sentences)), desc="occlusion processing", position=1, leave=False):
                 w = sentences.pop(i)
                 ss = " ".join(sentences)
-                full_new_msg = self.generate_whole_prompt(ss)
-                new_result = self.get_completion(full_new_msg)
+                # full_new_msg = self.generate_whole_prompt(ss)
+                new_result = self.get_result(ss)
                 # print("\nThe new score is:", new_result)
                 if self.noise:
                     occlusion[i] = og_score - new_result + random.uniform(0, self.random_range)
@@ -238,7 +267,7 @@ class OcclusionExplanationGenerator():
             attr = list()
             for k, v in occlusion.items():
                 attr.append((sentences[k], (v, k)))
-            print(attr)
+            # print(attr)
             output.append((attr, sentences))
         
         if self.p_only:
@@ -286,6 +315,8 @@ if __name__ == "__main__":
     print('device is:', device)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, padding_size='left')
     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16).to(device)
+    model.generation_config.temperature=None
+    model.generation_config.top_p=None
     max_tokens = 2048
 
     print(f"\n*** model {MODEL_NAME} has been loaded ***\n")

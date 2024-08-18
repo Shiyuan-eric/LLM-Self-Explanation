@@ -40,6 +40,8 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, padding_size='left')
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME, torch_dtype=torch.float16).to(device)
+    model.generation_config.temperature=None
+    model.generation_config.top_p=None
 
     label_filename = "true_labels.pickle"
     if args.output_file:
@@ -57,55 +59,69 @@ if __name__ == "__main__":
         evaluator.reconstrct_topk_expl()
     else:
         evaluator.process_model_input()
+        if args.pe and args.llama:
+            with open('llama3_pe_expl.pickle', "wb") as handle:
+                pickle.dump(evaluator.explanations, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open('llama3_pe_pred.pickle', "wb") as handle:
+                pickle.dump(evaluator.model_labels, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            evaluator.cache_results("llama_pe_cache.pickle")
+        elif args.pe == False and args.llama:
+            with open('llama3_ep_expl.pickle', "wb") as handle:
+                pickle.dump(evaluator.explanations, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open('llama3_ep_pred.pickle', "wb") as handle:
+                pickle.dump(evaluator.model_labels, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            evaluator.cache_results("llama_ep_cache.pickle")
         evaluator.print_fail_rate()
         evaluator.reset_fails()
 
-    print(evaluator.explanations)
+    # print(len(evaluator.explanations))
+    # print(evaluator.explanations)
     # print(evaluator.model_labels)
     # with open('llama3_ep_expl.pickle', "wb") as handle:
     #     pickle.dump(evaluator.explanations, handle, protocol=pickle.HIGHEST_PROTOCOL)
     # with open('llama3_ep_pred.pickle', "wb") as handle:
     #     pickle.dump(evaluator.model_labels, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    # accuracy = evaluator.calculate_accuracy()
-    # print("Accuracy: ", str(accuracy))
-    # print("Accuracy: ", str(accuracy), file=output_file)
     
-    mistral_comprehensiveness = evaluator.calculate_comprehensiveness()
-    print("Mistral Comprehensiveness: ", str(
-        mistral_comprehensiveness), file=output_file)
-    print("Mistral Comprehensiveness: ", str(
-        mistral_comprehensiveness))
+    accuracy = evaluator.calculate_accuracy()
+    print("Accuracy: ", str(accuracy))
+    print("Accuracy: ", str(accuracy), file=output_file)
+    
+    comprehensiveness = evaluator.calculate_comprehensiveness()
+    print("Comprehensiveness: ", str(
+        comprehensiveness), file=output_file)
+    print("Comprehensiveness: ", str(
+        comprehensiveness))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
     
-    mistral_sufficiency = evaluator.calculate_sufficiency()
-    print("Mistral Sufficiency: ", str(mistral_sufficiency), file=output_file)
-    print("Mistral Sufficiency: ", str(mistral_sufficiency))
+    sufficiency = evaluator.calculate_sufficiency()
+    print("Sufficiency: ", str(sufficiency), file=output_file)
+    print("Sufficiency: ", str(sufficiency))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
     
-    mistral_df_mit = evaluator.calculate_DF_MIT()
-    print("Mistral DF_MIT: ", str(mistral_df_mit), file=output_file)
-    print("Mistral DF_MIT: ", str(mistral_df_mit))
+    df_mit = evaluator.calculate_DF_MIT()
+    print("DF_MIT: ", str(df_mit), file=output_file)
+    print("DF_MIT: ", str(df_mit))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
     
-    mistral_df_frac = evaluator.calculate_DF_Frac()
-    print("Mistral DF_Frac: ", str(mistral_df_frac), file=output_file)
-    print("Mistral DF_Frac: ", str(mistral_df_frac))
+    df_frac = evaluator.calculate_DF_Frac()
+    print("DF_Frac: ", str(df_frac), file=output_file)
+    print("DF_Frac: ", str(df_frac))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
     
-    mistral_del_rank_correlation = evaluator.calculate_del_rank_correlation()
-    print("Mistral Deletion Rank Correlation: ", str(
-        mistral_del_rank_correlation), file=output_file)
-    print("Mistral Deletion Rank Correlation: ", str(
-        mistral_del_rank_correlation))
+    del_rank_correlation = evaluator.calculate_del_rank_correlation()
+    print("Deletion Rank Correlation: ", str(
+        del_rank_correlation), file=output_file)
+    print("Deletion Rank Correlation: ", str(
+        del_rank_correlation))
     evaluator.print_fail_rate()
     evaluator.reset_fails()
     
-    metric_values = [mistral_comprehensiveness, mistral_sufficiency,
-                     mistral_df_mit, mistral_df_frac, mistral_del_rank_correlation]
+    metric_values = [comprehensiveness, sufficiency,
+                     df_mit, df_frac, del_rank_correlation]
     metric_names = ["Comprehensivness", "Sufficiency",
                     "DF_MIT", "DF_Frac", "Deletion Rank Correlation"]
     metric_df = pd.DataFrame(metric_values, metric_names)

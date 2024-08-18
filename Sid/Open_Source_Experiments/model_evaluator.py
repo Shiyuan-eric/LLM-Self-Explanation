@@ -27,7 +27,7 @@ llama_P_E_MSG = [
 
 llama_E_P_MSG = [
     {
-        "role": "user",
+        "role": "system",
         "content": "You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. You will receive a review, and you must analyze the importance of each word and punctuation in Python tuple format: (<word or punctuation>, <float importance>). Each word or punctuation is separated by a space. The importance should be a decimal number to three decimal places ranging from -1 to 1, with -1 implying a negative sentiment and 1 implying a positive sentiment. Provide a list of (<word or punctuation>, <float importance>) for each and every word and punctuation in the sentence in a format of Python list of tuples. Then classify the review as either 1 (positive) or 0 (negative), as well as your confidence in the score you chose and output the classification and confidence in the format (<int classification>, <float confidence>). The confidence should be a decimal number between 0 and 1, with 0 being the lowest confidence and 1 being the highest confidence.\n\nIt does not matter whether or not the sentence makes sense. Do your best given the sentence.\n\nThe movie review will be encapsulated within <review> tags. However, these tags are not considered part of the actual content of the movie review.\n\nExample output:\n [(<word or punctuation>, <float importance>), (<word or punctuation>, <float importance>), ... ]\n(<int classification>, <float confidence>)"
     }
     ]
@@ -61,7 +61,13 @@ mistral_E_P_MSG = [
         "role": "assistant", "content": "I understand. Please send a review and I will do my best to respond in the desired format."
     }
     ]
-
+def loadData(filename):
+    with open(filename, 'rb') as f:
+        loaded_data = pickle.load(f)
+    return loaded_data
+def storeData(filename, data):
+    with open(filename, "wb") as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 class Model_Evaluator():
 
@@ -80,8 +86,24 @@ class Model_Evaluator():
         self.p_only = p_only
         self.mistral = mistral
         self.llama = llama
+        self.label_filename = label_filename
+        
+        if self.llama and self.PE and not self.p_only:
+            self.cache_name = 'llama_pe_cache.pickle'
+        elif self.llama and self.PE == False and not self.p_only:
+            self.cache_name = 'llama_ep_cache.pickle'
+        elif self.llama and self.p_only:
+            self.cache_name = 'llama_p_only_cache.pickle'
+        print("cache file:", self.cache_name)
+        
+        self.pre_phrase = "<review> "
+        self.post_phrase = " <review>"
+        self.init_message()
+        self.random_range = 10e-4
+        random.seed(0)
+
+    def init_message(self):
         if self.p_only:
-            print("p_only mode.")
             if self.mistral:
                 self.messages = mistral_P_MSG.copy()
             elif self.llama:
@@ -96,13 +118,6 @@ class Model_Evaluator():
                 self.messages = mistral_E_P_MSG.copy()
             elif self.llama:
                 self.messages = llama_E_P_MSG.copy()
-        self.label_filename = label_filename
-
-        self.pre_phrase = "<review> "
-        self.post_phrase = " <review>"
-        
-        self.random_range = 10e-4
-        random.seed(0)
 
     # Opens LIME responses from pickle file
     def process_LIME_input(self):
@@ -119,13 +134,10 @@ class Model_Evaluator():
         try:
             if self.p_only:
                 (prediction, confidence) = ast.literal_eval(lines[0])
-                exp = None
             elif self.PE:
-                exp = ast.literal_eval(lines[1])
                 cleaned_string = re.sub(r'[^0-9,.()]+', '', lines[0])
                 (prediction, confidence) = ast.literal_eval(cleaned_string)
             else:
-                exp = ast.literal_eval(lines[0])
                 cleaned_string = re.sub(r'[^0-9,.()]+', '', lines[1])
                 (prediction, confidence) = ast.literal_eval(cleaned_string)
         except:
@@ -138,12 +150,20 @@ class Model_Evaluator():
                     return (prediction, confidence, exp)
                 except:
                     pass
-            # GPT didn't give an answer in the required format (more likely an invalid response)
-            # So, make everything 0
+            (prediction, confidence) = (0, 0.5)
+        try:
+            if self.p_only:
+                exp = None
+            elif self.PE:
+                exp = ast.literal_eval(lines[1])
+            else:
+                exp = ast.literal_eval(lines[0])
+        except:
             exp = []
             for token in sentence.split(' '):
                 exp.append((token, 0.0))
-            (prediction, confidence) = (0, 0.5)
+            # GPT didn't give an answer in the required format (more likely an invalid response)
+            # So, make everything 0            
             self.fails += 1
         return (prediction, confidence, exp)
 
@@ -228,6 +248,22 @@ class Model_Evaluator():
 
             new_exp = sorted(new_exp, key=lambda x: x[1][0], reverse=True)
             self.explanations.append((new_exp, orig_tokens))
+    
+    def cache_results(self, filename):
+        try:
+            loadData(self.cache_name)
+        except:
+            cache_dict = dict()
+            for i in range(len(self.model_labels)):
+                prediction, confidence = self.model_labels[i]
+                _, tokens = self.explanations[i]
+                sentence = " ".join(tokens)
+                cache_dict[sentence] = (prediction, confidence)
+            # print(cache_dict)
+            with open(filename, "wb") as handle:
+                pickle.dump(cache_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
     def reconstrct_topk_expl(self, label_file_name=None):
         with open(self.response_filename, 'rb') as f:
             self.explanations = pickle.load(f)
@@ -274,8 +310,8 @@ class Model_Evaluator():
             max_new_tokens=2048,
             pad_token_id = self.tokenizer.eos_token_id,
             eos_token_id=terminators,
-            # do_sample=True,
-            # temperature=0.6,
+            do_sample=False,
+            # temperature=0.0,
             # top_p=0.9,
         )
         response = outputs[0][input_ids.shape[-1]:]
@@ -309,6 +345,19 @@ class Model_Evaluator():
 
         return correct / total
 
+    def get_result(self, phrase):
+        cache_dict = loadData(self.cache_name)
+        if phrase in cache_dict:
+            label, prob = cache_dict[phrase]
+        else:
+            self.init_message()
+            self.messages.append({"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            label, prob, _ = self.get_completion()
+            self.messages.pop()
+            cache_dict[phrase] = (label, prob)
+            storeData(self.cache_name, cache_dict)
+        return label, prob
+
     # Generates and parses model response
     def get_completion(self):
         model_response = self.generate_response()
@@ -317,6 +366,7 @@ class Model_Evaluator():
     # Implements comprehensiveness metric (DeYoung et al., 2020)
     def calculate_comprehensiveness(self):
         print("Calculating Comprehensivness...")
+        self.init_message()
         compr_list = []
         for i in tqdm(range(len(self.explanations))):
             ret = 0
@@ -324,10 +374,11 @@ class Model_Evaluator():
             tkns = self.explanations[i][1][:]
             masked_tkns = tkns[:]
             phrase = ' '.join(tkns)
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-            (pre_y_label, pre_y_prob, __) = self.get_completion()
-            self.messages.pop()
+            pre_y_label, pre_y_prob = self.get_result(phrase)
+            # self.messages.append(
+                # {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            # (pre_y_label, pre_y_prob, __) = self.get_completion()
+            # self.messages.pop()
             for j in range(len(explanation)):
                 # remove the tokens one by one
                 index = explanation[j][1][1]
@@ -339,10 +390,12 @@ class Model_Evaluator():
                 if (phrase == ""):
                     ret += pre_y_prob - 0.5
                     continue
-                self.messages.append(
-                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-                (y_label, y_prob, __) = self.get_completion()
-                self.messages.pop()
+                
+                y_label, y_prob = self.get_result(phrase)
+                # self.messages.append(
+                #     {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                # (y_label, y_prob, __) = self.get_completion()
+                # self.messages.pop()
                 pre_y_prob = pre_y_prob if pre_y_label == 1 else (
                     1 - pre_y_prob)
                 y_prob = y_prob if y_label == 1 else (1 - y_prob)
@@ -355,6 +408,7 @@ class Model_Evaluator():
     # Implements sufficiency metric (DeYoung et al., 2020)
     def calculate_sufficiency(self):
         print("Calculating Sufficiency...")
+        self.init_message()
         suff_list = []
         for i in tqdm(range(len(self.explanations))):
             ret = 0
@@ -362,10 +416,11 @@ class Model_Evaluator():
             tkns = self.explanations[i][1][:]
             masked_tkns = ['' for token in tkns]
             phrase = ' '.join(tkns)
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-            (pre_y_label, pre_y_prob, __) = self.get_completion()
-            self.messages.pop()
+            pre_y_label, pre_y_prob = self.get_result(phrase)
+            # self.messages.append(
+                # {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            # (pre_y_label, pre_y_prob, __) = self.get_completion()
+            # self.messages.pop()
             pre_y_prob = pre_y_prob if pre_y_label == 1 else (1 - pre_y_prob)
             y_prob = 0.5
             ret += abs(pre_y_prob - y_prob)
@@ -374,11 +429,11 @@ class Model_Evaluator():
                 index = explanation[j][1][1]
                 masked_tkns[index] = tkns[index]
                 phrase = ' '.join([t for t in masked_tkns if t != ''])
-
-                self.messages.append(
-                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-                (y_label, y_prob, __) = self.get_completion()
-                self.messages.pop()
+                y_label, y_prob = self.get_result(phrase)
+                # self.messages.append(
+                #     {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                # (y_label, y_prob, __) = self.get_completion()
+                # self.messages.pop()
                 y_prob = y_prob if y_label == 1 else (1 - y_prob)
                 ret += abs(pre_y_prob - y_prob)
 
@@ -394,18 +449,23 @@ class Model_Evaluator():
     # Implements DF_MIT metric (Chrysostomou and Ale- tras, 2021)
     def calculate_DF_MIT(self):
         print("Calculating DF_MIT...")
+        self.init_message()
+        # index = [10,11,20,27,32,44,51,68,70,76,86,97]
+        # output = list()
         flipped = 0
         total = 0
+        # self.explanations = [self.explanations[i] for i in index]
         for i in tqdm(range(len(self.explanations))):
             explanation = self.explanations[i][0]
             tkns = self.explanations[i][1][:]
             phrase = ' '.join(tkns)
-            og_phrase = phrase
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-            (pre_y_label, pre_y_prob, __) = self.get_completion()
+            # og_phrase = phrase
+            pre_y_label, pre_y_prob = self.get_result(phrase)
+            # self.messages.append(
+            #     {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            # (pre_y_label, pre_y_prob, __) = self.get_completion()
             npre_y_prob = pre_y_prob if pre_y_label == 1 else (1 - pre_y_prob)
-            self.messages.pop()
+            # self.messages.pop()
             if (len(explanation) == 0):
                 continue
             index = explanation[0][1][1]
@@ -413,27 +473,33 @@ class Model_Evaluator():
 
             phrase = ' '.join(tkns)  # phrase w/o most important token
             tkns.insert(index, word)  # restore tokens
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-            (y_label, y_prob, __) = self.get_completion()
+            y_label, y_prob = self.get_result(phrase)
+            # self.messages.append(
+            #     {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            # (y_label, y_prob, __) = self.get_completion()
             ny_prob = y_prob if y_label == 1 else (1 - y_prob)
-            self.messages.pop()
-
+            # self.messages.pop()
+            
             if y_label != pre_y_label:
                 # print("(%d, %f) --> (%d, %f)" %
                 #   (pre_y_label, pre_y_prob, y_label, y_prob))
                 if ((ny_prob > 0.5 and npre_y_prob <= 0.5) or (ny_prob <= 0.5 and npre_y_prob > 0.5)):
                     flipped += 1
+                    # output.append((i, word, npre_y_prob, ny_prob))
             elif ((ny_prob > 0.5 and npre_y_prob <= 0.5) or (ny_prob <= 0.5 and npre_y_prob > 0.5)):
-                print("(%d, %f) --> (%d, %f)" %
-                      (pre_y_label, pre_y_prob, y_label, y_prob))
+                # print("(%d, %f) --> (%d, %f)" %
+                    #   (pre_y_label, pre_y_prob, y_label, y_prob))
                 flipped += 1
+                # output.append((i, word, npre_y_prob, ny_prob))
             total += 1
+            # output.append((i, word, npre_y_prob, ny_prob))
+        # print(output)
         return flipped/total
 
     # Implements DF_Frac metric (Serrano and Smith, 2019)
     def calculate_DF_Frac(self):
         print("Calculating DF_Frac...")
+        self.init_message()
         frac_list = []
 
         for i in tqdm(range(len(self.explanations))):
@@ -441,19 +507,21 @@ class Model_Evaluator():
             tkns = self.explanations[i][1][:]
             masked_tkns = [token for token in tkns]
             phrase = ' '.join(tkns)
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-            (pre_y_label, pre_y_prob, __) = self.get_completion()
-            self.messages.pop()
+            pre_y_label, pre_y_prob = self.get_result(phrase)
+            # self.messages.append(
+                # {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            # (pre_y_label, pre_y_prob, __) = self.get_completion()
+            # self.messages.pop()
             num_taken = len(explanation) + 1
             for j in range(len(explanation)):
                 index = explanation[j][1][1]
                 masked_tkns[index] = ''
                 phrase = ' '.join([t for t in masked_tkns if t != ''])
-                self.messages.append(
-                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-                (y_label, y_prob, __) = self.get_completion()
-                self.messages.pop()
+                y_label, y_prob = self.get_result(phrase)
+                # self.messages.append(
+                    # {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                # (y_label, y_prob, __) = self.get_completion()
+                # self.messages.pop()
                 if y_label != pre_y_label:
                     num_taken = j + 1  # took j+1 tokens to flip decision
                     break
@@ -464,25 +532,29 @@ class Model_Evaluator():
     # Implements deletion rank correlation metric (Alvarez-Melis and Jaakkola, 2018b)
     def calculate_del_rank_correlation(self):
         print("Calculating Deletion Rank Correlation...")
+        self.init_message()
         ret_list = []
         for i in tqdm(range(len(self.explanations))):
             explanation = self.explanations[i][0][:]
             tkns = self.explanations[i][1][:]
             phrase = ' '.join(tkns)
-            self.messages.append(
-                {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-            (pre_y_label, pre_y_prob, __) = self.get_completion()
-            self.messages.pop()
+            pre_y_label, pre_y_prob = self.get_result(phrase)
+            # self.messages.append(
+                # {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+            # (pre_y_label, pre_y_prob, __) = self.get_completion()
+            # self.messages.pop()
             delta_f = []
             e = []
             for j in range(len(explanation)):
                 index = explanation[j][1][1]
                 word = tkns[index]
                 tkns[index] = ""
-                self.messages.append(
-                    {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
-                (y_label, y_prob, __) = self.get_completion()
-                self.messages.pop()
+                phrase = ' '.join([t for t in tkns if t != ''])
+                y_label, y_prob = self.get_result(phrase)
+                # self.messages.append(
+                    # {"role": "user", "content": self.pre_phrase + phrase + self.post_phrase})
+                # (y_label, y_prob, __) = self.get_completion()
+                # self.messages.pop()
                 delta_f.append(pre_y_prob - y_prob +
                                random.uniform(-1 * self.random_range, self.random_range))
                 e.append(
