@@ -1,0 +1,15 @@
+Input File: llama3_response_PE.pickle
+Accuracy:  0.87
+Comprehensiveness:  0.22417936588121223
+Sufficiency:  0.1592834288258505
+DF_MIT:  0.11
+DF_Frac:  0.4947326575785971
+Deletion Rank Correlation:  0.033156360737440334
+                                  0
+Comprehensivness           0.224179
+Sufficiency                0.159283
+DF_MIT                     0.110000
+DF_Frac                    0.494733
+Deletion Rank Correlation  0.033156
+
+Complete!

@@ -1,0 +1,14 @@
+Input File: llama_EP_Occlusion.pickle
+Comprehensiveness:  0.2243283111782518
+Sufficiency:  0.1884426996756728
+DF_MIT:  0.16
+DF_Frac:  0.6084225104174659
+Deletion Rank Correlation:  -0.06168912196942387
+                                  0
+Comprehensivness           0.224328
+Sufficiency                0.188443
+DF_MIT                     0.160000
+DF_Frac                    0.608423
+Deletion Rank Correlation -0.061689
+
+Complete!

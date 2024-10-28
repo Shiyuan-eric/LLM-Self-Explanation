@@ -1,0 +1,70 @@
+Evaluation between (PE_word_saliency_list, PE_Occlusion_word_saliency_list)
+PE_feature_agreement 0.2608333333333333
+PE_rank_agreement 0.16061904761904763
+PE_sign_agreement 0.2608333333333333
+PE_signed_rank_agreement 0.16061904761904763
+PE_rank_correlation -0.015889676419373094
+PE_pairwise_rank_agreement 0.49461694554352786
+PE_IOU 0.1967359307359307
+******************************************************************
+EP_feature_agreementeature_agreement 0.36990476190476185
+EP_rank_agreement 0.14466666666666664
+EP_sign_agreement 0.36057142857142854
+EP_signed_rank_agreement 0.14266666666666666
+EP_rank_correlation 0.4202461822906103
+EP_pairwise_rank_agreement 0.7121075869387632
+EP_IOU 0.28949589299589285
+
+
+
+Evaluation between (PE_word_saliency_list, PE_LIME_word_saliency_list), (EP_word_saliency_list, EP_LIME_word_saliency_list)
+PE_feature_agreement 0.16571428571428573
+PE_rank_agreement 0.06916666666666665
+PE_sign_agreement 0.16071428571428575
+PE_signed_rank_agreement 0.06416666666666665
+PE_rank_correlation 0.014209770767226943
+PE_pairwise_rank_agreement 0.5073463709229526
+PE_IOU 0.11729459429459427
+******************************************************************
+EP_feature_agreementeature_agreement 0.1437619047619048
+EP_rank_agreement 0.07816666666666666
+EP_sign_agreement 0.06833333333333332
+EP_signed_rank_agreement 0.0475
+EP_rank_correlation nan
+EP_pairwise_rank_agreement 0.5000080122651811
+EP_IOU 0.10055278055278054
+
+
+
+Evaluation between (PE_Occlusion_word_saliency_list, PE_LIME_word_saliency_list), (EP_Occlusion_word_saliency_list, EP_LIME_word_saliency_list)
+PE_feature_agreement 0.17452380952380953
+PE_rank_agreement 0.07666666666666667
+PE_sign_agreement 0.14202380952380955
+PE_signed_rank_agreement 0.05916666666666666
+PE_rank_correlation 0.08296638053141653
+PE_pairwise_rank_agreement 0.5302194795485331
+PE_IOU 0.12390692640692637
+******************************************************************
+EP_feature_agreementeature_agreement 0.2118095238095237
+EP_rank_agreement 0.094
+EP_sign_agreement 0.109
+EP_signed_rank_agreement 0.0575
+EP_rank_correlation nan
+EP_pairwise_rank_agreement 0.5106363095214361
+EP_IOU 0.1462295482295482
+
+
+
+Evaluation between all PE_Natural_saliency_list & EP_Natural_saliency_list
+PE_feature_agreement1 1.0
+PE_feature_agreement2 0.2608333333333333
+PE_feature_agreement3 0.16571428571428573
+PE_IOU1 1.0
+PE_IOU2 0.1967359307359307
+PE_IOU3 0.11729459429459427
+EP_feature_agreement1 0.45507142857142846
+EP_feature_agreement2 0.18835714285714286
+EP_feature_agreement3 0.06719047619047619
+EP_IOU1 0.37936940836940836
+EP_IOU2 0.1255312465312465
+EP_IOU3 0.04122244422244423

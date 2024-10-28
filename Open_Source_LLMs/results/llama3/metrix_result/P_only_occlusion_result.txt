@@ -1,0 +1,14 @@
+Input File: P_only_Occlusion_Result_Predict.pickle
+Mistral Comprehensiveness:  0.18949732213057893
+Mistral Sufficiency:  0.23330906819232886
+Mistral DF_MIT:  0.2
+Mistral DF_Frac:  0.5795211036991096
+Mistral Deletion Rank Correlation:  0.016044216044037763
+                                  0
+Comprehensivness           0.189497
+Sufficiency                0.233309
+DF_MIT                     0.200000
+DF_Frac                    0.579521
+Deletion Rank Correlation  0.016044
+
+Complete!
