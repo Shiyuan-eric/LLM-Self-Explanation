@@ -262,7 +262,6 @@ def main():
     print("EP_rank_agreement",sum(EP_rank_agreement)/len(EP_rank_agreement))
     print("EP_sign_agreement",sum(EP_sign_agreement)/len(EP_sign_agreement))
     print("EP_signed_rank_agreement",sum(EP_signed_rank_agreement)/len(EP_signed_rank_agreement))
-    print(EP_rank_correlation)
     EP_rank_correlation = [x for x in EP_rank_correlation if not math.isnan(x)]
     print("EP_rank_correlation",sum(EP_rank_correlation)/len(EP_rank_correlation))
     print("EP_pairwise_rank_agreement",sum(EP_pairwise_rank_agreement)/len(EP_pairwise_rank_agreement))
