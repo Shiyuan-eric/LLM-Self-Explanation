@@ -35,6 +35,7 @@ def feature_agreement(word_saliency_list_1: list, word_saliency_list_2: list, k:
     top_k_1 = word_saliency_list_1[:k:]
     top_k_2 = word_saliency_list_2[:k:]
     inter = set(top_k_1).intersection(set(top_k_2))
+    
     return len(inter) / k
 
 def rank_agreement(word_saliency_list_1: list, word_saliency_list_2: list, k: int):
@@ -92,232 +93,73 @@ def main():
     size = 100
     dataset = load_dataset('sst', split='test')
     dataset = dataset.shuffle(seed=8)['sentence']
-    PE_word_saliency_list, PE_attribute_val = parse_explanation("gpt4o_pe_expl.pickle")
-    EP_word_saliency_list, EP_attribute_val= parse_explanation("gpt4o_ep_expl.pickle")
-    PE_Occlusion_word_saliency_list, PE_Occlusion_attribute_val = parse_explanation("gpt4o_pe_occlusion.pickle")
-    EP_Occlusion_word_saliency_list, EP_Occlusion_attribute_val = parse_explanation("gpt4o_ep_occlusion.pickle")
-    PE_LIME_word_saliency_list, PE_LIME_attribute_val = parse_explanation("gpt4o_LIME_response_PE_0_100.pickle")
-    EP_LIME_word_saliency_list, EP_LIME_attribute_val = parse_explanation("gpt4o_LIME_response_EP_0_100.pickle")
-    PE_Natural_saliency_list, _ = parse_explanation("gpt4o_topk_expl_PE.pickle")
-    EP_Natural_saliency_list, _ = parse_explanation("gpt4o_topk_expl_EP.pickle")
-
-    print("Evaluation between (PE_word_saliency_list, PE_Occlusion_word_saliency_list)")
-    PE_feature_agreement = []
-    PE_rank_agreement = []
-    PE_sign_agreement = []
-    PE_signed_rank_agreement = []
-    PE_rank_correlation = []
-    PE_pairwise_rank_agreement = []
-    PE_IOU = []
-    EP_feature_agreement = []
-    EP_rank_agreement = []
-    EP_sign_agreement = []
-    EP_signed_rank_agreement = []
-    EP_rank_correlation = []
-    EP_pairwise_rank_agreement = []
-    EP_IOU = []
-    for i in range(size):
-        l = len(dataset[i].split())
-        t = math.floor(l * 0.2)
-        if t == 0:
-            t = 1
-        PE_feature_agreement.append(feature_agreement(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i], t))
-        PE_rank_agreement.append(rank_agreement(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i], t))
-        PE_sign_agreement.append(sign_agreement(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i], PE_attribute_val[i], PE_Occlusion_attribute_val[i], t))
-        PE_signed_rank_agreement.append(signed_rank_agreement(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i], PE_attribute_val[i], PE_Occlusion_attribute_val[i], t))
-        PE_rank_correlation.append(rank_correlation(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i], PE_attribute_val[i], PE_Occlusion_attribute_val[i]))
-        PE_pairwise_rank_agreement.append(pairwise_rank_agreement(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i]))
-        PE_IOU.append(IOU(PE_word_saliency_list[i], PE_Occlusion_word_saliency_list[i], t))
-
-
-        EP_feature_agreement.append(feature_agreement(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i], t))
-        EP_rank_agreement.append(rank_agreement(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i], t))
-        EP_sign_agreement.append(sign_agreement(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i], EP_attribute_val[i], EP_Occlusion_attribute_val[i], t))
-        EP_signed_rank_agreement.append(signed_rank_agreement(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i], EP_attribute_val[i], EP_Occlusion_attribute_val[i], t))
-        EP_rank_correlation.append(rank_correlation(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i], EP_attribute_val[i], EP_Occlusion_attribute_val[i]))
-        EP_pairwise_rank_agreement.append(pairwise_rank_agreement(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i]))
-        EP_IOU.append(IOU(EP_word_saliency_list[i], EP_Occlusion_word_saliency_list[i], t))
-
-    print("PE_feature_agreement",sum(PE_feature_agreement)/len(PE_feature_agreement))
-    print("PE_rank_agreement",sum(PE_rank_agreement)/len(PE_rank_agreement))
-    print("PE_sign_agreement",sum(PE_sign_agreement)/len(PE_sign_agreement))
-    print("PE_signed_rank_agreement",sum(PE_signed_rank_agreement)/len(PE_signed_rank_agreement))
-    print("PE_rank_correlation",sum(PE_rank_correlation)/len(PE_rank_correlation))
-    print("PE_pairwise_rank_agreement",sum(PE_pairwise_rank_agreement)/len(PE_pairwise_rank_agreement))
-    print("PE_IOU",sum(PE_IOU)/len(PE_IOU))
-    print("******************************************************************")
-    print("EP_feature_agreementeature_agreement",sum(EP_feature_agreement)/len(EP_feature_agreement))
-    print("EP_rank_agreement",sum(EP_rank_agreement)/len(EP_rank_agreement))
-    print("EP_sign_agreement",sum(EP_sign_agreement)/len(EP_sign_agreement))
-    print("EP_signed_rank_agreement",sum(EP_signed_rank_agreement)/len(EP_signed_rank_agreement))
-    print("EP_rank_correlation",sum(EP_rank_correlation)/len(EP_rank_correlation))
-    print("EP_pairwise_rank_agreement",sum(EP_pairwise_rank_agreement)/len(EP_pairwise_rank_agreement))
-    print("EP_IOU",sum(EP_IOU)/len(EP_IOU))
-
-    print("\n\n")
-    print("Evaluation between (PE_word_saliency_list, PE_LIME_word_saliency_list), (EP_word_saliency_list, EP_LIME_word_saliency_list)")
-    PE_feature_agreement = []
-    PE_rank_agreement = []
-    PE_sign_agreement = []
-    PE_signed_rank_agreement = []
-    PE_rank_correlation = []
-    PE_pairwise_rank_agreement = []
-    PE_IOU = []
-    EP_feature_agreement = []
-    EP_rank_agreement = []
-    EP_sign_agreement = []
-    EP_signed_rank_agreement = []
-    EP_rank_correlation = []
-    EP_pairwise_rank_agreement = []
-    EP_IOU = []
-    for i in range(size):
-        # print(i)
-        # print(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_attribute_val[i], EP_LIME_attribute_val[i])
-        l = len(dataset[i].split())
-        t = math.floor(l * 0.2)
-        if t == 0:
-            t = 1
-        PE_feature_agreement.append(feature_agreement(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i], t))
-        PE_rank_agreement.append(rank_agreement(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i], t))
-        PE_sign_agreement.append(sign_agreement(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i], PE_attribute_val[i], PE_LIME_attribute_val[i], t))
-        PE_signed_rank_agreement.append(signed_rank_agreement(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i], PE_attribute_val[i], PE_LIME_attribute_val[i], t))
-        PE_rank_correlation.append(rank_correlation(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i], PE_attribute_val[i], PE_LIME_attribute_val[i]))
-        PE_pairwise_rank_agreement.append(pairwise_rank_agreement(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i]))
-        PE_IOU.append(IOU(PE_word_saliency_list[i], PE_LIME_word_saliency_list[i], t))
-
-
-        EP_feature_agreement.append(feature_agreement(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], t))
-        EP_rank_agreement.append(rank_agreement(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], t))
-        EP_sign_agreement.append(sign_agreement(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_attribute_val[i], EP_LIME_attribute_val[i], t))
-        EP_signed_rank_agreement.append(signed_rank_agreement(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_attribute_val[i], EP_LIME_attribute_val[i], t))
-        EP_rank_correlation.append(rank_correlation(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_attribute_val[i], EP_LIME_attribute_val[i]))
-        EP_pairwise_rank_agreement.append(pairwise_rank_agreement(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i]))
-        EP_IOU.append(IOU(EP_word_saliency_list[i], EP_LIME_word_saliency_list[i], t))
-
-    print("PE_feature_agreement",sum(PE_feature_agreement)/len(PE_feature_agreement))
-    print("PE_rank_agreement",sum(PE_rank_agreement)/len(PE_rank_agreement))
-    print("PE_sign_agreement",sum(PE_sign_agreement)/len(PE_sign_agreement))
-    print("PE_signed_rank_agreement",sum(PE_signed_rank_agreement)/len(PE_signed_rank_agreement))
-    print("PE_rank_correlation",sum(PE_rank_correlation)/len(PE_rank_correlation))
-    print("PE_pairwise_rank_agreement",sum(PE_pairwise_rank_agreement)/len(PE_pairwise_rank_agreement))
-    print("PE_IOU",sum(PE_IOU)/len(PE_IOU))
-    print("******************************************************************")
-    print("EP_feature_agreementeature_agreement",sum(EP_feature_agreement)/len(EP_feature_agreement))
-    print("EP_rank_agreement",sum(EP_rank_agreement)/len(EP_rank_agreement))
-    print("EP_sign_agreement",sum(EP_sign_agreement)/len(EP_sign_agreement))
-    print("EP_signed_rank_agreement",sum(EP_signed_rank_agreement)/len(EP_signed_rank_agreement))
-    EP_rank_correlation = [x for x in EP_rank_correlation if not math.isnan(x)]
-    print("EP_rank_correlation",sum(EP_rank_correlation)/len(EP_rank_correlation))
-    print("EP_pairwise_rank_agreement",sum(EP_pairwise_rank_agreement)/len(EP_pairwise_rank_agreement))
-    print("EP_IOU",sum(EP_IOU)/len(EP_IOU))
-
-
-    print("\n\n")
-    print("Evaluation between (PE_Occlusion_word_saliency_list, PE_LIME_word_saliency_list), (EP_Occlusion_word_saliency_list, EP_LIME_word_saliency_list)")
-    PE_feature_agreement = []
-    PE_rank_agreement = []
-    PE_sign_agreement = []
-    PE_signed_rank_agreement = []
-    PE_rank_correlation = []
-    PE_pairwise_rank_agreement = []
-    PE_IOU = []
-    EP_feature_agreement = []
-    EP_rank_agreement = []
-    EP_sign_agreement = []
-    EP_signed_rank_agreement = []
-    EP_rank_correlation = []
-    EP_pairwise_rank_agreement = []
-    EP_IOU = []
-    for i in range(size):
-        l = len(dataset[i].split())
-        t = math.floor(l * 0.2)
-        if t == 0:
-            t = 1
-        PE_feature_agreement.append(feature_agreement(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i], t))
-        PE_rank_agreement.append(rank_agreement(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i], t))
-        PE_sign_agreement.append(sign_agreement(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i], PE_Occlusion_attribute_val[i], PE_LIME_attribute_val[i], t))
-        PE_signed_rank_agreement.append(signed_rank_agreement(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i], PE_Occlusion_attribute_val[i], PE_LIME_attribute_val[i], t))
-        PE_rank_correlation.append(rank_correlation(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i], PE_Occlusion_attribute_val[i], PE_LIME_attribute_val[i]))
-        PE_pairwise_rank_agreement.append(pairwise_rank_agreement(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i]))
-        PE_IOU.append(IOU(PE_Occlusion_word_saliency_list[i], PE_LIME_word_saliency_list[i], t))
-
-
-        EP_feature_agreement.append(feature_agreement(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i], t))
-        EP_rank_agreement.append(rank_agreement(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i], t))
-        EP_sign_agreement.append(sign_agreement(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_Occlusion_attribute_val[i], EP_LIME_attribute_val[i], t))
-        EP_signed_rank_agreement.append(signed_rank_agreement(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_Occlusion_attribute_val[i], EP_LIME_attribute_val[i], t))
-        EP_rank_correlation.append(rank_correlation(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i], EP_Occlusion_attribute_val[i], EP_LIME_attribute_val[i]))
-        EP_pairwise_rank_agreement.append(pairwise_rank_agreement(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i]))
-        EP_IOU.append(IOU(EP_Occlusion_word_saliency_list[i], EP_LIME_word_saliency_list[i], t))
-
-    print("PE_feature_agreement",sum(PE_feature_agreement)/len(PE_feature_agreement))
-    print("PE_rank_agreement",sum(PE_rank_agreement)/len(PE_rank_agreement))
-    print("PE_sign_agreement",sum(PE_sign_agreement)/len(PE_sign_agreement))
-    print("PE_signed_rank_agreement",sum(PE_signed_rank_agreement)/len(PE_signed_rank_agreement))
-    print("PE_rank_correlation",sum(PE_rank_correlation)/len(PE_rank_correlation))
-    print("PE_pairwise_rank_agreement",sum(PE_pairwise_rank_agreement)/len(PE_pairwise_rank_agreement))
-    print("PE_IOU",sum(PE_IOU)/len(PE_IOU))
-    print("******************************************************************")
-    print("EP_feature_agreementeature_agreement",sum(EP_feature_agreement)/len(EP_feature_agreement))
-    print("EP_rank_agreement",sum(EP_rank_agreement)/len(EP_rank_agreement))
-    print("EP_sign_agreement",sum(EP_sign_agreement)/len(EP_sign_agreement))
-    print("EP_signed_rank_agreement",sum(EP_signed_rank_agreement)/len(EP_signed_rank_agreement))
-    EP_rank_correlation = [x for x in EP_rank_correlation if not math.isnan(x)]
-    print("EP_rank_correlation",sum(EP_rank_correlation)/len(EP_rank_correlation))
-    print("EP_pairwise_rank_agreement",sum(EP_pairwise_rank_agreement)/len(EP_pairwise_rank_agreement))
-    print("EP_IOU",sum(EP_IOU)/len(EP_IOU))
-
-
-    print("\n\n")
-    print("Evaluation between all PE_Natural_saliency_list & EP_Natural_saliency_list")
-    PE_feature_agreement1 = []
-    PE_feature_agreement2 = []
-    PE_feature_agreement3 = []
-    PE_IOU1 = []
-    PE_IOU2 = []
-    PE_IOU3 = []
     
-    EP_feature_agreement1 = []
-    EP_feature_agreement2 = []
-    EP_feature_agreement3 = []
-    EP_IOU1 = []
-    EP_IOU2 = []
-    EP_IOU3 = []
+    explanations = {
+        "PE": parse_explanation("gpt4o_pe_expl.pickle"),
+        "EP": parse_explanation("gpt4o_ep_expl.pickle"),
+        "PE_Occlusion": parse_explanation("gpt4o_pe_occlusion.pickle"),
+        "EP_Occlusion": parse_explanation("gpt4o_ep_occlusion.pickle"),
+        "PE_LIME": parse_explanation("gpt4o_LIME_response_PE_0_100.pickle"),
+        "EP_LIME": parse_explanation("gpt4o_LIME_response_EP_0_100.pickle"),
+        "PE_Natural": parse_explanation("gpt4o_topk_expl_PE.pickle"),
+        "EP_Natural": parse_explanation("gpt4o_topk_expl_EP.pickle")
+    }
 
+    def evaluate_agreements(expl1, expl2, attr1, attr2, size, dataset):
+        feature_agreement_scores = []
+        rank_agreement_scores = []
+        sign_agreement_scores = []
+        signed_rank_agreement_scores = []
+        rank_correlation_scores = []
+        pairwise_rank_agreement_scores = []
+        IOU_scores = []
 
-    for i in range(size):
-        l = len(dataset[i].split())
-        t = math.floor(l * 0.2)
-        if t == 0:
-            t = 1
-        PE_feature_agreement1.append(feature_agreement(PE_word_saliency_list[i], PE_Natural_saliency_list[i], t))
-        PE_IOU1.append(IOU(PE_word_saliency_list[i], PE_Natural_saliency_list[i], t))
-        PE_feature_agreement2.append(feature_agreement(PE_Occlusion_word_saliency_list[i], PE_Natural_saliency_list[i], t))
-        PE_IOU2.append(IOU(PE_Occlusion_word_saliency_list[i], PE_Natural_saliency_list[i], t))
-        PE_feature_agreement3.append(feature_agreement(PE_LIME_word_saliency_list[i], PE_Natural_saliency_list[i], t))
-        PE_IOU3.append(IOU(PE_LIME_word_saliency_list[i], PE_Natural_saliency_list[i], t))
+        for i in range(size):
+            l = len(dataset[i].split())
+            t = max(math.floor(l * 0.2), 1)
+            feature_agreement_scores.append(feature_agreement(expl1[i], expl2[i], t))
+            rank_agreement_scores.append(rank_agreement(expl1[i], expl2[i], t))
+            sign_agreement_scores.append(sign_agreement(expl1[i], expl2[i], attr1[i], attr2[i], t))
+            signed_rank_agreement_scores.append(signed_rank_agreement(expl1[i], expl2[i], attr1[i], attr2[i], t))
+            rank_correlation_scores.append(rank_correlation(expl1[i], expl2[i], attr1[i], attr2[i]))
+            pairwise_rank_agreement_scores.append(pairwise_rank_agreement(expl1[i], expl2[i]))
+            IOU_scores.append(IOU(expl1[i], expl2[i], t))
 
-        EP_feature_agreement1.append(feature_agreement(EP_word_saliency_list[i], EP_Natural_saliency_list[i], t))
-        EP_IOU1.append(IOU(EP_word_saliency_list[i], EP_Natural_saliency_list[i], t))
-        EP_feature_agreement2.append(feature_agreement(EP_Occlusion_word_saliency_list[i], EP_Natural_saliency_list[i], t))
-        EP_IOU2.append(IOU(EP_Occlusion_word_saliency_list[i], EP_Natural_saliency_list[i], t))
-        EP_feature_agreement3.append(feature_agreement(EP_LIME_word_saliency_list[i], EP_Natural_saliency_list[i], t))
-        EP_IOU3.append(IOU(EP_LIME_word_saliency_list[i], EP_Natural_saliency_list[i], t))
+        rank_correlation_scores = [x for x in rank_correlation_scores if not math.isnan(x)]
+        return {
+            "feature_agreement": sum(feature_agreement_scores) / len(feature_agreement_scores),
+            "rank_agreement": sum(rank_agreement_scores) / len(rank_agreement_scores),
+            "sign_agreement": sum(sign_agreement_scores) / len(sign_agreement_scores),
+            "signed_rank_agreement": sum(signed_rank_agreement_scores) / len(signed_rank_agreement_scores),
+            "rank_correlation": sum(rank_correlation_scores) / len(rank_correlation_scores),
+            "pairwise_rank_agreement": sum(pairwise_rank_agreement_scores) / len(pairwise_rank_agreement_scores),
+            "IOU": sum(IOU_scores) / len(IOU_scores)
+        }
 
+    def print_evaluation_results(results, label):
+        print(f"Evaluation between {label}")
+        for key, value in results.items():
+            print(f"{key}: {value}")
+        print("******************************************************************")
 
-    print("PE_feature_agreement1",sum(PE_feature_agreement1)/len(PE_feature_agreement1))
-    print("PE_feature_agreement2",sum(PE_feature_agreement2)/len(PE_feature_agreement2))
-    print("PE_feature_agreement3",sum(PE_feature_agreement3)/len(PE_feature_agreement3))
-    print("PE_IOU1",sum(PE_IOU1)/len(PE_IOU1))
-    print("PE_IOU2",sum(PE_IOU2)/len(PE_IOU2))
-    print("PE_IOU3",sum(PE_IOU3)/len(PE_IOU3))
+    evaluations = [
+        ("PE vs PE_Occlusion", explanations["PE"], explanations["PE_Occlusion"]),
+        ("EP vs EP_Occlusion", explanations["EP"], explanations["EP_Occlusion"]),
+        ("PE vs PE_LIME", explanations["PE"], explanations["PE_LIME"]),
+        ("EP vs EP_LIME", explanations["EP"], explanations["EP_LIME"]),
+        ("PE_Occlusion vs PE_LIME", explanations["PE_Occlusion"], explanations["PE_LIME"]),
+        ("EP_Occlusion vs EP_LIME", explanations["EP_Occlusion"], explanations["EP_LIME"]),
+        ("PE vs PE_Natural", explanations["PE"], explanations["PE_Natural"]),
+        ("EP vs EP_Natural", explanations["EP"], explanations["EP_Natural"]),
+        ("PE_Occlusion vs PE_Natural", explanations["PE_Occlusion"], explanations["PE_Natural"]),
+        ("EP_Occlusion vs EP_Natural", explanations["EP_Occlusion"], explanations["EP_Natural"]),
+        ("PE_LIME vs PE_Natural", explanations["PE_LIME"], explanations["PE_Natural"]),
+        ("EP_LIME vs EP_Natural", explanations["EP_LIME"], explanations["EP_Natural"])
+    ]
 
-    print("EP_feature_agreement1",sum(EP_feature_agreement1)/len(EP_feature_agreement1))
-    print("EP_feature_agreement2",sum(EP_feature_agreement2)/len(EP_feature_agreement2))
-    print("EP_feature_agreement3",sum(EP_feature_agreement3)/len(EP_feature_agreement3))
-    print("EP_IOU1",sum(EP_IOU1)/len(EP_IOU1))
-    print("EP_IOU2",sum(EP_IOU2)/len(EP_IOU2))
-    print("EP_IOU3",sum(EP_IOU3)/len(EP_IOU3))
+    for label, (expl1, attr1), (expl2, attr2) in evaluations:
+        results = evaluate_agreements(expl1, expl2, attr1, attr2, size, dataset)
+        print_evaluation_results(results, label)
 
 
 

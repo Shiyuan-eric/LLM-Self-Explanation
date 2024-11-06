@@ -2,12 +2,8 @@ import time
 import os
 import sys
 import getopt
-import torch
 import pickle
 from tqdm import tqdm
-from torch.utils.data import DataLoader
-import torch.nn.functional as F
-import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
 import argparse
